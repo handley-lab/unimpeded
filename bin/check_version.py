@@ -1,17 +1,9 @@
 #!/usr/bin/env python
 import sys
-import subprocess
 from packaging import version
-from utils import unit_incremented
+from utils import unit_incremented, run
 vfile = "unimpeded/_version.py"
 README = "README.rst"
-
-
-def run(*args):
-    return subprocess.run(args, text=True,
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE).stdout
-
 
 current_version = run("cat", vfile)
 current_version = current_version.split("=")[-1].strip().strip("'")

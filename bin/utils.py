@@ -1,3 +1,4 @@
+import subprocess
 from packaging import version
 
 
@@ -25,3 +26,11 @@ def unit_incremented(a, b):
                 a.micro == 0 and
                 a.minor == 0 and
                 a.major == b.major+1)
+
+
+def run(*args):
+    return subprocess.run(args, text=True,
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE).stdout
+
+
