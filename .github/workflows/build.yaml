@@ -70,7 +70,7 @@ jobs:
       - name: Wait for PyPi
         uses: nev7n/wait_for_response@v1
         with:
-          url: "https://files.pythonhosted.org/packages/source/a/unimpeded/unimpeded-${{ env.DIST_VERSION }}.tar.gz"
+          url: "https://files.pythonhosted.org/packages/source/u/unimpeded/unimpeded-${{ env.DIST_VERSION }}.tar.gz"
           responseCode: 200
           timeout: 600000
           interval: 10000
