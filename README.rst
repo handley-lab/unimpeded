@@ -1,9 +1,9 @@
-==================================================================================
-unimpeded: Universal model comparison & parameter estimation over diverse datasets
-==================================================================================
-:unimpeded: Universal model comparison & parameter estimation over diverse datasets
+===========================================================================================
+unimpeded: Universal model comparison & parameter estimation distributed over every dataset
+===========================================================================================
+:unimpeded: Universal model comparison & parameter estimation distributed over every dataset 
 :Author: Will Handley
-:Version: 0.0.0
+:Version: 0.0.1
 :Homepage: https://github.com/handley-lab/unimpeded
 :Documentation: http://unimpeded.readthedocs.io/
 
@@ -95,9 +95,15 @@ Full Documentation is hosted at `ReadTheDocs <http://unimpeded.readthedocs.io/>`
 
 .. code:: bash
 
-   cd docs
-   make html
+    python -m pip install ".[all,docs]"
+    cd docs
+    make html
 
+and view the documentation by opening ``docs/build/html/index.html`` in a browser. To regenerate the automatic RST files run:
+
+.. code:: bash
+
+    sphinx-apidoc -fM -t docs/templates/ -o docs/source/ unimpeded/
 
 Citation
 --------
