@@ -3,7 +3,7 @@ unimpeded: Universal model comparison & parameter estimation distributed over ev
 ===========================================================================================
 :unimpeded: Universal model comparison & parameter estimation distributed over every dataset 
 :Author: Will Handley
-:Version: 0.0.2
+:Version: 0.0.3
 :Homepage: https://github.com/handley-lab/unimpeded
 :Documentation: http://unimpeded.readthedocs.io/
 
@@ -19,8 +19,8 @@ unimpeded: Universal model comparison & parameter estimation distributed over ev
 .. image:: https://badge.fury.io/py/unimpeded.svg
    :target: https://badge.fury.io/py/unimpeded
    :alt: PyPi location
-.. image:: https://zenodo.org/badge/175663535.svg
-   :target: https://zenodo.org/badge/latestdoi/175663535
+.. image:: https://zenodo.org/badge/532924237.svg
+   :target: https://zenodo.org/badge/latestdoi/532924237
    :alt: Permanent DOI for this release
 .. image:: https://img.shields.io/badge/license-MIT-blue.svg
    :target: https://github.com/handley-lab/unimpeded/blob/master/LICENSE
