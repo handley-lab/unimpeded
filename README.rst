@@ -3,7 +3,7 @@ unimpeded: Universal model comparison & parameter estimation over diverse datase
 ==================================================================================
 :unimpeded: Universal model comparison & parameter estimation over diverse datasets
 :Author: Will Handley
-:Version: 0.0.0
+:Version: 0.0.1
 :Homepage: https://github.com/handley-lab/unimpeded
 :Documentation: http://unimpeded.readthedocs.io/
 
