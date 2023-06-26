@@ -6,10 +6,15 @@ repos:
         entry: python -m flake8
         language: system
         types: [python]
-        files: "anesthetic/|tests/"
+        files: "unimpeded/|tests/"
       - id: pydocstyle
         name: pydocstyle
         entry: python -m pydocstyle --convention=numpy
         language: system
         types: [python]
-        files: "anesthetic/"
+        files: "unimpeded/"
+      - id: version_number
+        name: version_number
+        entry: python bin/check_version.py
+        language: system
+        types: [python]
