@@ -13,11 +13,11 @@ unimpeded: Universal model comparison & parameter estimation over diverse datase
 .. image:: https://codecov.io/gh/handley-lab/unimpeded/branch/master/graph/badge.svg
    :target: https://codecov.io/gh/handley-lab/unimpeded
    :alt: Test Coverage Status
-.. image:: https://readthedocs.org/projects/anesthetic/badge/?version=latest
-   :target: https://anesthetic.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/unimpeded/badge/?version=latest
+   :target: https://unimpeded.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
-.. image:: https://badge.fury.io/py/anesthetic.svg
-   :target: https://badge.fury.io/py/anesthetic
+.. image:: https://badge.fury.io/py/unimpeded.svg
+   :target: https://badge.fury.io/py/unimpeded
    :alt: PyPi location
 .. image:: https://zenodo.org/badge/175663535.svg
    :target: https://zenodo.org/badge/latestdoi/175663535
@@ -38,6 +38,8 @@ It provides mcmc and nested sampling chains, allowing parameter estimation, mode
 
 Current functionality includes:
 
+UNDER CONSTRUCTION
+
 
 Features
 --------
@@ -56,8 +58,8 @@ or via the setup.py
 .. code:: bash
 
     git clone https://github.com/handley-lab/unimpeded
-    cd anesthetic
-    python setup.py install --user
+    cd unimpeded
+    python -m pip install .
 
 You can check that things are working by running the test suite:
 
