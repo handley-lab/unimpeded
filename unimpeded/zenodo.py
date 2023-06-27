@@ -6,14 +6,14 @@ import json
 
 class ZenodoBase(object):
     def __init__(self, access_token, sandbox=False):
-        self.ACCESS_TOKEN = ACCESS_TOKEN
+        self.access_token = access_token
         if sandbox:
             self.base_url = "https://sandbox.zenodo.org/api"
         else:
             self.base_url = "https://zenodo.org/api"
 
     def params(self, **kwargs):
-        params = {'access_token': self.ACCESS_TOKEN}
+        params = {'access_token': self.access_token}
         params.update(kwargs)
         return params
 
