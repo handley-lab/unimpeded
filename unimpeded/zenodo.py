@@ -139,3 +139,32 @@ class ZenodoLicenses(ZenodoBase):
     def __init__(self, access_token, sandbox=False):
         super().__init__(access_token, sandbox=sandbox)
         self.base_url = os.path.join(self.base_url, "licenses")
+
+class Zenodo(object):
+    def __init__(self, access_token, sandbox=False):
+        self.access_token = access_token
+        self.sandbox = sandbox
+
+    @property
+    def depositions(self):
+        return ZenodoDepositions(self.access_token, sandbox=self.sandbox)
+
+    @property
+    def records(self):
+        return ZenodoRecords(self.access_token, sandbox=self.sandbox)
+
+    @property
+    def licenses(self):
+        return ZenodoLicenses(self.access_token, sandbox=self.sandbox)
+
+    def actions(self, record_id):
+        return ZenodoDepositionActions(record_id, self.access_token, sandbox=self.sandbox)
+
+    def files(self, record_id):
+        return ZenodoDepositionFiles(record_id, self.access_token, sandbox=self.sandbox)
+
+
+
+
+
+
