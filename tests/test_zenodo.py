@@ -147,6 +147,7 @@ def test_depositions():
     with pytest.raises(HTTPError, match='403 Client Error'):
         r = z.depositionactions(r['id']).edit()
     z.depositionactions(r['id']).discard()
+    time.sleep(1)
     with pytest.raises(HTTPError, match='403 Client Error'):
         z.depositionactions(r['id']).discard()
 
