@@ -4,7 +4,7 @@
    :maxdepth: 1
    :caption: Contents
 
-   anesthetic <modules>
+   unimpeded <modules>
 
 .. include:: ../../README.rst
 

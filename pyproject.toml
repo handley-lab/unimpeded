@@ -13,7 +13,8 @@ readme = "README.rst"
 license = {file = "LICENSE"}
 requires-python = ">=3.8"
 dependencies = [
-    "anesthetic>=2.0.0b40"
+    "requests",
+    "anesthetic>=2.0.0b40",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
