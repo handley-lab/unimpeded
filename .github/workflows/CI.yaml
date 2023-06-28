@@ -42,7 +42,7 @@ jobs:
 
   pip:
     env:
-      ZENODO_SANDBOX_TOKEN: ${{ secrets.ZENODO_SANBOX_TOKEN }}
+      ZENODO_SANDBOX_TOKEN: ${{ secrets.ZENODO_SANDBOX_TOKEN }}
       PR_NUMBER: ${{ github.event.number }}
     runs-on: ubuntu-latest
     steps:
