@@ -60,6 +60,14 @@ def test_depositions():
     """
     creators = [{"name": "Github Actions"}]
 
+    with pytest.raises(HTTPError, match='400 Client Error'):
+        r = z.depositions.create(
+                title=title,
+                description=description,
+                creators=creators,
+                upload_type='foobar'
+                )
+
     r = z.depositions.create(
             title=title,
             description=description,
@@ -108,16 +116,26 @@ def test_depositions():
     z.depositionfiles(r['id']).delete(f3['id'])
     with pytest.raises(HTTPError, match='404 Client Error'):
         z.depositionfiles(r['id']).retrieve(f3['id'])
+    with pytest.raises(HTTPError, match='404 Client Error'):
+        z.depositionfiles(r['id']).delete(f3['id'])
 
     ids = [f['id'] for f in z.depositionfiles(r['id']).list()]
+    with pytest.raises(HTTPError, match='404 Client Error'):
+        z.depositionfiles(r['id']).delete(f3['id'])
+
     reversed(ids)
     z.depositionfiles(r['id']).sort(reversed(ids))
+    with pytest.raises(HTTPError, match='500 Server Error'):
+        z.depositionfiles(r['id']).sort(['foo', 'bar'])
     ids_reversed = [f['id'] for f in z.depositionfiles(r['id']).list()]
     assert list(reversed(ids)) == ids_reversed
 
     assert r['submitted'] is False
     r = z.depositionactions(r['id']).publish()
     assert r['submitted'] is True
+
+    with pytest.raises(HTTPError, match='403 Client Error'):
+        r = z.depositionactions(r['id']).publish()
 
     assert r['state'] == 'done'
 
@@ -126,9 +144,15 @@ def test_depositions():
 
     r = z.depositionactions(r['id']).edit()
     assert r['state'] == 'inprogress'
+    with pytest.raises(HTTPError, match='403 Client Error'):
+        r = z.depositionactions(r['id']).edit()
     z.depositionactions(r['id']).discard()
+    with pytest.raises(HTTPError, match='403 Client Error'):
+        z.depositionactions(r['id']).discard()
 
     r = z.depositionactions(r['id']).newversion()
+    with pytest.raises(HTTPError, match='403 Client Error'):
+        r = z.depositionactions(r['id']).newversion()
     z.depositionfiles(r['id']).create(f'file3 on {dt}', datafile_3)
     os.remove(datafile_3)
 

@@ -97,7 +97,7 @@ class ZenodoDepositions(Zenodo):
     def create(self, title, description, upload_type="dataset", **kwargs):
         """Create a new deposition."""
         return self.update(None, title, description,
-                           upload_type="dataset", **kwargs)
+                           upload_type=upload_type, **kwargs)
 
     def update(self, record_id, title, description,
                upload_type="dataset", **kwargs):
@@ -146,14 +146,6 @@ class ZenodoDepositionFiles(Zenodo):
         """Sort the files for a record."""
         data = json.dumps([{"id": i} for i in id_order])
         r = requests.put(self._url(), params=self._params(), data=data)
-        if r.status_code != http.HTTPStatus.OK:
-            r.raise_for_status()
-        return r.json()
-
-    def update(self, file_id, name):
-        """Update a file name for a record."""
-        data = {"name": name}
-        r = requests.put(self._url(file_id), params=self._params(), data=data)
         if r.status_code != http.HTTPStatus.OK:
             r.raise_for_status()
         return r.json()
