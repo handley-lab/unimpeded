@@ -14,7 +14,7 @@ license = {file = "LICENSE"}
 requires-python = ">=3.8"
 dependencies = [
     "requests",
-    "anesthetic>=2.0.0b40",
+    "anesthetic",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
