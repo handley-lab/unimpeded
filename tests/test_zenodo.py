@@ -20,7 +20,7 @@ def test_access_token():
 
 
 def test_bad_token():
-    z = Zenodo(access_token='foodbar')
+    z = Zenodo(access_token='foobar')
     with pytest.raises(HTTPError, match='401 Client Error'):
         z.depositions.list()
 
