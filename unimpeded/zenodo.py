@@ -2,10 +2,11 @@
 
 https://developers.zenodo.org/
 """
-import requests
-import os
 import http
 import json
+import os
+
+import requests
 
 
 class Zenodo(object):
@@ -64,16 +65,14 @@ class Zenodo(object):
 
     def depositionactions(self, record_id):
         """Deposition actions API."""
-        return ZenodoDepositionActions(record_id, self.access_token,
-                                       self.sandbox)
+        return ZenodoDepositionActions(record_id, self.access_token, self.sandbox)
 
     def depositionfiles(self, record_id):
         """Deposition files API."""
-        return ZenodoDepositionFiles(record_id, self.access_token,
-                                     self.sandbox)
+        return ZenodoDepositionFiles(record_id, self.access_token, self.sandbox)
 
     def _params(self, **kwargs):
-        params = {'access_token': self.access_token}
+        params = {"access_token": self.access_token}
         params.update(kwargs)
         return params
 
@@ -96,19 +95,18 @@ class ZenodoDepositions(Zenodo):
 
     def create(self, title, description, upload_type="dataset", **kwargs):
         """Create a new deposition."""
-        return self.update(None, title, description,
-                           upload_type=upload_type, **kwargs)
+        return self.update(None, title, description, upload_type=upload_type, **kwargs)
 
-    def update(self, record_id, title, description,
-               upload_type="dataset", **kwargs):
+    def update(self, record_id, title, description, upload_type="dataset", **kwargs):
         """Update a deposition."""
-        metadata = {"title": title,
-                    "description": description,
-                    "upload_type": upload_type}
+        metadata = {
+            "title": title,
+            "description": description,
+            "upload_type": upload_type,
+        }
         metadata.update(kwargs)
         json = {"metadata": metadata}
-        r = requests.post(self._url(record_id), params=self._params(),
-                          json=json)
+        r = requests.post(self._url(record_id), params=self._params(), json=json)
         if r.status_code != http.HTTPStatus.CREATED:
             r.raise_for_status()
         return r.json()
@@ -123,8 +121,9 @@ class ZenodoDepositionFiles(Zenodo):
     def __init__(self, record_id, access_token=None, sandbox=False):
         super().__init__(access_token, sandbox)
         self.record_id = record_id
-        self.base_url = os.path.join(self.base_url, "deposit/depositions",
-                                     str(self.record_id), "files")
+        self.base_url = os.path.join(
+            self.base_url, "deposit/depositions", str(self.record_id), "files"
+        )
 
     def create(self, name, filepath, new_api=True):
         """Create a file for a record."""
@@ -135,9 +134,10 @@ class ZenodoDepositionFiles(Zenodo):
                 r = requests.put(bucket_url, params=self._params(), data=fp)
             else:
                 data = {"name": name}
-                files = {'file': fp}
-                r = requests.post(self._url(), params=self._params(),
-                                  data=data, files=files)
+                files = {"file": fp}
+                r = requests.post(
+                    self._url(), params=self._params(), data=data, files=files
+                )
             if r.status_code != http.HTTPStatus.CREATED:
                 r.raise_for_status()
             return r.json()
@@ -159,8 +159,9 @@ class ZenodoDepositionActions(Zenodo):
 
     def __init__(self, record_id, access_token=None, sandbox=False):
         super().__init__(access_token, sandbox)
-        self.base_url = os.path.join(self.base_url, "deposit/depositions",
-                                     str(record_id), "actions")
+        self.base_url = os.path.join(
+            self.base_url, "deposit/depositions", str(record_id), "actions"
+        )
 
     def publish(self):
         """Publish a record."""
