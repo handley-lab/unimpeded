@@ -1,0 +1,49 @@
+name: Code style
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  black:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+      - name: Install black
+        run: pip install black
+      - name: Run black
+        run: black . --check
+
+  isort:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+      - name: Install isort
+        run: pip install isort
+      - name: Run isort
+        run: isort . --check-only
+
+  pydocstyle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+      - name: Install pydocstyle
+        run: pip install pydocstyle
+      - name: run pydocstyle
+        run: python -m pydocstyle --convention=numpy anesthetic

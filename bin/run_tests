@@ -1,7 +1,10 @@
 #!/bin/bash
 
-echo "Running PEP code style tests"
-flake8 unimpeded tests
+echo "Running black check"
+black --check .
+
+echo "Running isort check"
+isort --check-only --profile black .
 
 echo "Running docstring checks"
 pydocstyle --convention=numpy unimpeded
