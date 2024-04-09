@@ -1,13 +1,15 @@
 import tomli
 
-with open("pyproject.toml", 'rb') as f:
+with open("pyproject.toml", "rb") as f:
     pyproject = tomli.load(f)
 
 description = pyproject["project"]["description"]
-version = open('unimpeded/_version.py','r').readlines()[0].split("=")[1].strip().strip("'")
+version = (
+    open("unimpeded/_version.py", "r").readlines()[0].split("=")[1].strip().strip('"')
+)
 url = pyproject["project"]["urls"]["Homepage"]
 pyproject["project"]["dependencies"]
-rel=1
+rel = 1
 
 
 PKGBUILD = """# Maintainer: Will Handley <wh260@cam.ac.uk> (aur.archlinux.org/account/wjhandley)
@@ -40,5 +42,10 @@ package() {
     cd "$srcdir/$_name-$pkgver"
     python -m installer --destdir="$pkgdir" dist/*.whl
 }
-""" % (version, rel, description, url)
+""" % (
+    version,
+    rel,
+    description,
+    url,
+)
 print(PKGBUILD)
