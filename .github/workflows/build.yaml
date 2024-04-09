@@ -115,6 +115,9 @@ jobs:
       - name: Generate meta.yaml from grayskull
         shell: bash -el {0}
         run: grayskull pypi --strict-conda-forge unimpeded
+      - name: Update the meta.yaml
+        shell: bash -el {0}
+        run: echo "\nchannels:\n  - handley-lab" >> unimpeded/meta.yaml
       - name: Build and upload the conda packages
         uses: uibcdf/action-build-and-upload-conda-packages@v1.2.0
         with:
