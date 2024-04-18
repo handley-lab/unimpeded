@@ -46,4 +46,4 @@ jobs:
       - name: Install pydocstyle
         run: pip install pydocstyle
       - name: run pydocstyle
-        run: python -m pydocstyle --convention=numpy anesthetic
+        run: python -m pydocstyle --convention=numpy unimpeded
