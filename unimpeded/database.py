@@ -25,3 +25,9 @@ class database:
                 data=fp,
                 params=params
             )
+    def download(self, ID, method, model, dataset):
+        filename = f"{method}_{model}_{dataset}.csv"
+        url = f'https://sandbox.zenodo.org/record/{ID}/files/{filename}?download=1'
+        response = requests.get(url)
+        with open(filename, 'wb') as file:
+            file.write(response.content)
