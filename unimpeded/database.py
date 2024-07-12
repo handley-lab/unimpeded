@@ -1,5 +1,6 @@
 import requests
 from anesthetic import read_chains
+import os
 
 class database:
     def __init__(self, sandbox=True, ACCESS_TOKEN=None, bucket_url=None):
@@ -15,10 +16,12 @@ class database:
             samples = read_chains(f"../{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}")
         samples.to_csv(filename) # saving samples as csv, but is it necessary?
         path = f"./{filename}"
+        print(path)
+        params = {'access_token': self.ACCESS_TOKEN}
         with open(path, "rb") as fp:
             print(path)
             r = requests.put(
-                f"{bucket_url}/{filename}",
+                f"{self.bucket_url}/{filename}",
                 data=fp,
                 params=params
             )
