@@ -22,6 +22,8 @@ jobs:
 
       - name: Test with pytest
         run: pytest --cov=unimpeded tests
+        with:
+          ACCESS_TOKEN: ${{ secrets.ZENODO_SANDBOX_TOKEN }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
