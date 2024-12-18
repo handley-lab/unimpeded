@@ -124,13 +124,15 @@ class database:
             print("Error retrieving deposit metadata:", r.status_code, r.json())
 
 
-    def publish(self, deposit_id):
+    def publish(self, deposit_id, metadata):
+        # Ask for metadata as compulsory input because it is required for secondary publishing, even if metadata is identical
         publish_url = f"{self.base_url}/{deposit_id}/actions/publish"   
         # Publish the deposit
         r = requests.post(publish_url,
                     params={'access_token': self.ACCESS_TOKEN},
-                    json={}
+                    json=metadata
                     )
+        r.json()
         r.raise_for_status()
         return r.json()
         
@@ -142,9 +144,10 @@ class database:
         print(f'description:{description}')
         r = requests.get(self.records_url, params={'q':f'description:"{description}"','access_token':self.ACCESS_TOKEN})
         r.raise_for_status()
+        print(r.json())
         deposit_data = r.json()
         no_records = len(deposit_data['hits']['hits']) # number of deposits with identical description on Zenodo found
-
+        print(f"Number of deposits with identical description: {no_records}")
         if no_records==1:
             deposit_id_retrieved = deposit_data['hits']['hits'][-1]['id']
             print(f"Deposit ID: {deposit_id_retrieved}")
@@ -204,3 +207,48 @@ class database:
             print(r['hits']['hits'][i]['metadata']['description'])
             print(r['hits']['hits'][i]['id'])
             print('\n')
+
+    def get_concept_doi(self, deposit_id):
+        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+        
+        # Fetch deposit details
+        response = requests.get(deposit_url)
+        response.raise_for_status()
+        
+        deposit = response.json()
+        concept_doi = deposit.get('conceptdoi')
+        
+        if concept_doi:
+            print(f"Concept DOI: {concept_doi}")
+            return concept_doi
+        else:
+            print("Concept DOI not found. Ensure the deposit is published.")
+            return None
+        
+    def get_versions(self, concept_doi):
+        url = f"{self.records_url}/{concept_doi}"
+        response = requests.get(self.records_url, params={'q':f'conceptdoi:"{concept_doi}"','access_token':self.ACCESS_TOKEN})
+        # Fetch the record for the given concept DOI
+        #response = requests.get(url, params={'access_token':self.ACCESS_TOKEN})
+
+        #headers = {"Authorization": f"Bearer {self.ACCESS_TOKEN}"}
+        #response = requests.get(url, headers=headers)
+
+        response.raise_for_status()
+        
+        # Extract versions from the response
+        record = response.json()
+        versions = record.get('versions', [])
+        
+        if versions:
+            print("Published versions of the deposit:")
+            for version in versions:
+                print(f"Version DOI: {version['doi']}")
+                print(f"Version ID: {version['id']}")
+                print(f"Version Title: {version.get('metadata', {}).get('title', 'No title available')}")
+                print(f"Version Published: {version.get('created', 'No date available')}")
+                print("-" * 40)
+        else:
+            print("No versions found for this concept DOI.")
+        
+        return versions, response
