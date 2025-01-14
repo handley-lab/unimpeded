@@ -24,7 +24,6 @@ class database:
         Returns:
         deposit_id (int): The ID of the new deposit on Zenodo
         """ 
-        #base_url = 'https://sandbox.zenodo.org/api/deposit/depositions'
         r = requests.post(self.base_url,
                    params={'access_token': self.ACCESS_TOKEN},
                    json={})
@@ -71,7 +70,7 @@ class database:
     
 
     def upload(self, filename, samples, deposit_id):
-        deposit_url = f"https://sandbox.zenodo.org/api/deposit/depositions/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
         r.raise_for_status()
         bucket_url = r.json().get("links", {}).get("bucket") # retrieve bucket_url from deposit_id
@@ -91,9 +90,9 @@ class database:
         os.remove(f"./{filename}")
         return r.json()
 
-    def download(self, ID, filename): #filename=method_model_dataset
-        metadata_url = f"https://sandbox.zenodo.org/api/deposit/depositions/{ID}?access_token={self.ACCESS_TOKEN}"
-        r = requests.get(metadata_url)
+    def download(self, deposit_id, filename): #filename=method_model_dataset
+        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+        r = requests.get(deposit_url)
         r.raise_for_status()
         if r.status_code == 200:
             deposit_info = r.json()
@@ -167,6 +166,9 @@ class database:
         
 
     def newversion(self, deposit_id):
+        """
+         Used to create a new version of an already published Zenodo deposit.
+        """
         try:
             # Step 1: Retrieve deposit information
             deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
