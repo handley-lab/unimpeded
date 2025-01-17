@@ -23,7 +23,7 @@ jobs:
       - name: Test with pytest
         run: pytest --cov=unimpeded tests
         env:
-          ACCESS_TOKEN: 'uLf8EIbWM07LqdBKV662KasAiAfuqPdvDnuStG68saS6nxEDJxk8SmkkzL4k'
+          ACCESS_TOKEN: ${{ secrets.RENEW_GITHUB_ACCESS_TOKEN }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
