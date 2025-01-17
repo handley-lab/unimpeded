@@ -45,7 +45,7 @@ class database:
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         metadata = {
             "metadata": {
-                "title": f"{method}_{model}_{dataset}",
+                "title": f"{model}_{dataset}",
                 "upload_type": "dataset",  # e.g., dataset, publication, image, software
                 "description": self.get_description(method, model, dataset),
                 "creators": [
@@ -254,3 +254,268 @@ class database:
             print("No versions found for this concept DOI.")
         
         return versions, response
+    
+
+
+    def get_deposit_ids_by_description(self, description):
+        """
+        Retrieves all deposit IDs that match the given description, including unpublished deposits,
+        and separates them into published and unpublished categories.
+
+        Args:
+            description (str): The description to search for.
+
+        Returns:
+            dict: A dictionary with two keys:
+                - "published": List of published deposit IDs
+                - "unpublished": List of unpublished deposit IDs
+        """
+        deposit_ids = {"published": [], "unpublished": []}
+        try:
+            # Include drafts/unpublished records by adding `status=all`
+            r = requests.get(
+                self.base_url,
+                params={
+                    'q': f'description:"{description}"',
+                    'all_versions': True,  # Include all versions (published and unpublished)
+                    'status': 'all',       # Ensure drafts/unpublished deposits are included
+                    'access_token': self.ACCESS_TOKEN
+                }
+            )
+            r.raise_for_status()
+            response_data = r.json()
+
+            # Handle response if it is a list
+            if isinstance(response_data, list):
+                for record in response_data:
+                    deposit_id = record.get('id')
+                    is_published = record.get('submitted', False)  # Check the "submitted" field
+                    if deposit_id:
+                        if is_published:
+                            deposit_ids["published"].append(deposit_id)
+                        else:
+                            deposit_ids["unpublished"].append(deposit_id)
+
+            # Handle response if it is a dictionary with nested structure
+            elif isinstance(response_data, dict):
+                for hit in response_data.get('hits', {}).get('hits', []):
+                    deposit_id = hit.get('id')
+                    is_published = hit.get('submitted', False)  # Check the "submitted" field
+                    if deposit_id:
+                        if is_published:
+                            deposit_ids["published"].append(deposit_id)
+                        else:
+                            deposit_ids["unpublished"].append(deposit_id)
+                        
+            else:
+                print("Unexpected response structure.")
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred while fetching deposit IDs: {e}")
+
+        # Print published and unpublished deposit IDs
+        print(f"Published deposit IDs: {deposit_ids['published']}")
+        print(f"Unpublished deposit IDs: {deposit_ids['unpublished']}")
+
+        return deposit_ids
+    
+    def delete_deposit_by_id_old(self, deposit_ids):
+        """
+        Deletes one or more deposits by their ID(s), but first checks if the deposit exists.
+
+        Args:
+            deposit_ids (int or list): A single deposit ID (int) or a list of deposit IDs to delete.
+
+        Returns:
+            list: A list of dictionaries, each containing the deposit ID and the status of the operation.
+        """
+        if isinstance(deposit_ids, int):
+            # Convert single integer deposit ID into a list for uniform processing
+            deposit_ids = [deposit_ids]
+
+        # Check if the list is empty
+        if not deposit_ids:
+            print("No existing deposits match the given description.")
+            return []
+
+        results = []
+
+        for deposit_id in deposit_ids:
+            try:
+                # Step 1: Check if the deposit exists
+                check_url = f"{self.base_url}/{deposit_id}"
+                check_response = requests.get(
+                    check_url,
+                    params={'access_token': self.ACCESS_TOKEN}
+                )
+
+                if check_response.status_code == 404:  # Deposit does not exist
+                    results.append({'deposit_id': deposit_id, 'status': 'Not Found'})
+                    continue
+                elif check_response.status_code != 200:  # Some other error while checking
+                    results.append({'deposit_id': deposit_id, 'status': f"Check Failed ({check_response.status_code})"})
+                    continue
+
+                # Step 2: Attempt to delete the deposit if it exists
+                delete_url = f"{self.base_url}/{deposit_id}"
+                delete_response = requests.delete(
+                    delete_url,
+                    params={'access_token': self.ACCESS_TOKEN}
+                )
+                
+                # Check if the deletion was successful
+                if delete_response.status_code == 204:  # HTTP 204 means No Content (successful deletion)
+                    results.append({'deposit_id': deposit_id, 'status': 'Deleted'})
+                else:
+                    results.append({'deposit_id': deposit_id, 'status': f"Delete Failed ({delete_response.status_code})"})
+            except requests.exceptions.RequestException as e:
+                print(f"An error occurred while processing deposit ID {deposit_id}: {e}")
+                results.append({'deposit_id': deposit_id, 'status': 'Error'})
+
+        return results
+    
+    def delete_deposit_by_id(self, deposit_ids):
+        """
+        Deletes one or more deposits by their ID(s), including published deposits.
+        If a deposit is published, it first removes the DOI before deleting the deposit.
+
+        Args:
+            deposit_ids (int or list): A single deposit ID (int) or a list of deposit IDs to delete.
+
+        Returns:
+            list: A list of dictionaries, each containing the deposit ID and the status of the operation.
+        """
+        # Handle both integer and list input for deposit_ids
+        if isinstance(deposit_ids, int):
+            deposit_ids = [deposit_ids]
+
+        # Check if the list is empty
+        if not deposit_ids:
+            print("No existing deposits match the given description.")
+            return []
+
+        results = []
+
+        for deposit_id in deposit_ids:
+            try:
+                # Step 1: Check if the deposit exists
+                check_url = f"{self.base_url}/{deposit_id}"
+                check_response = requests.get(
+                    check_url,
+                    params={'access_token': self.ACCESS_TOKEN}
+                )
+
+                if check_response.status_code == 404:  # Deposit does not exist
+                    results.append({'deposit_id': deposit_id, 'status': 'Not Found'})
+                    continue
+                elif check_response.status_code != 200:  # Some other error while checking
+                    results.append({'deposit_id': deposit_id, 'status': f"Check Failed ({check_response.status_code})"})
+                    continue
+
+                # Determine if the deposit is published
+                deposit_data = check_response.json()
+                is_published = deposit_data.get('submitted', False)
+
+                # Step 2: If published, delete the DOI first
+                if is_published:
+                    doi_url = f"{self.base_url}/{deposit_id}/actions"
+                    doi_response = requests.post(
+                        doi_url,
+                        params={'access_token': self.ACCESS_TOKEN},
+                        json={'action': 'edit'}  # Unlocks the published deposit for deletion
+                    )
+
+                    if doi_response.status_code != 200:
+                        results.append({'deposit_id': deposit_id, 'status': f"Failed to Unlock DOI ({doi_response.status_code})"})
+                        continue
+
+                # Step 3: Attempt to delete the deposit
+                delete_url = f"{self.base_url}/{deposit_id}"
+                delete_response = requests.delete(
+                    delete_url,
+                    params={'access_token': self.ACCESS_TOKEN}
+                )
+                
+                # Check if the deletion was successful
+                if delete_response.status_code == 204:  # HTTP 204 means No Content (successful deletion)
+                    results.append({'deposit_id': deposit_id, 'status': 'Deleted'})
+                else:
+                    results.append({'deposit_id': deposit_id, 'status': f"Delete Failed ({delete_response.status_code})"})
+            except requests.exceptions.RequestException as e:
+                print(f"An error occurred while processing deposit ID {deposit_id}: {e}")
+                results.append({'deposit_id': deposit_id, 'status': 'Error'})
+
+        return results
+    
+    def delete_deposit_by_id2(self, deposit_ids):
+        """
+        Deletes one or more deposits by their ID(s), including published deposits.
+        If a deposit is published, it first unlocks the DOI before deleting the deposit.
+
+        Args:
+            deposit_ids (int or list): A single deposit ID (int) or a list of deposit IDs to delete.
+
+        Returns:
+            list: A list of dictionaries, each containing the deposit ID and the status of the operation.
+        """
+        # Handle both integer and list input for deposit_ids
+        if isinstance(deposit_ids, int):
+            deposit_ids = [deposit_ids]
+
+        # Check if the list is empty
+        if not deposit_ids:
+            print("No existing deposits match the given description.")
+            return []
+
+        results = []
+
+        for deposit_id in deposit_ids:
+            try:
+                # Step 1: Check if the deposit exists
+                check_url = f"{self.base_url}/{deposit_id}"
+                check_response = requests.get(
+                    check_url,
+                    params={'access_token': self.ACCESS_TOKEN}
+                )
+
+                if check_response.status_code == 404:  # Deposit does not exist
+                    results.append({'deposit_id': deposit_id, 'status': 'Not Found'})
+                    continue
+                elif check_response.status_code != 200:  # Some other error while checking
+                    results.append({'deposit_id': deposit_id, 'status': f"Check Failed ({check_response.status_code})"})
+                    continue
+
+                # Determine if the deposit is published
+                deposit_data = check_response.json()
+                is_published = deposit_data.get('submitted', False)
+
+                # Step 2: If published, unlock the deposit for deletion
+                if is_published:
+                    unlock_url = f"{self.base_url}/{deposit_id}/actions/edit"
+                    unlock_response = requests.post(
+                        unlock_url,
+                        params={'access_token': self.ACCESS_TOKEN}
+                    )
+
+                    if unlock_response.status_code == 201:
+                        results.append({'deposit_id': deposit_id, 'status': 'DOI unlocked'})
+                    else:
+                        results.append({'deposit_id': deposit_id, 'status': f"Failed to Unlock DOI ({unlock_response.status_code})"})
+                        continue
+
+                # Step 3: Attempt to delete the deposit
+                delete_url = f"{self.base_url}/{deposit_id}"
+                delete_response = requests.delete(
+                    delete_url,
+                    params={'access_token': self.ACCESS_TOKEN}
+                )
+                
+                # Check if the deletion was successful
+                if delete_response.status_code == 204:  # HTTP 204 means No Content (successful deletion)
+                    results.append({'deposit_id': deposit_id, 'status': 'Deleted'})
+                else:
+                    results.append({'deposit_id': deposit_id, 'status': f"Delete Failed ({delete_response.status_code})"})
+            except requests.exceptions.RequestException as e:
+                print(f"An error occurred while processing deposit ID {deposit_id}: {e}")
+                results.append({'deposit_id': deposit_id, 'status': 'Error'})
+
+        return results
