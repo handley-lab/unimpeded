@@ -21,9 +21,9 @@ jobs:
         run: pip install -e ".[test]"
 
       - name: Test with pytest
-        run: python -m pytest --cov=unimpeded tests
+        run: pytest --cov=unimpeded tests
         env:
-          ACCESS_TOKEN: ${{ secrets.RENEW_GITHUB_ACCESS_TOKEN }}
+          ACCESS_TOKEN: "${{ secrets.RENEW_GITHUB_ACCESS_TOKEN }}"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
