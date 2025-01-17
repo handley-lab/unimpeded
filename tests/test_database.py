@@ -10,8 +10,7 @@ import pytest
 import requests
 #ACCESS_TOKEN = 'Kt4ZX8YhOYDO5GJQLHQInEFjK2qvf3yTMAjgjncOsmO5OiKQTb4eZaTtF9Y9'
 
-#ACCESS_TOKEN = os.environ['ACCESS_TOKEN']# import ACCESS_TOKEN from Github secrets or local computer
-ACCESS_TOKEN = 'uLf8EIbWM07LqdBKV662KasAiAfuqPdvDnuStG68saS6nxEDJxk8SmkkzL4k'
+ACCESS_TOKEN = os.environ['ACCESS_TOKEN']# import ACCESS_TOKEN from Github secrets or local computer
 params = {'access_token': ACCESS_TOKEN} 
 #%%
 #bucket_url = 'https://sandbox.zenodo.org/api/files/d8292cb1-2e9f-4c94-a253-fe1fc84dc412'
