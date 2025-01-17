@@ -21,7 +21,7 @@ jobs:
         run: pip install -e ".[test]"
 
       - name: Test with pytest
-        run: pytest --cov=unimpeded tests
+        run: python -m pytest --cov=unimpeded tests
         env:
           ACCESS_TOKEN: ${{ secrets.RENEW_GITHUB_ACCESS_TOKEN }}
 
