@@ -69,7 +69,7 @@ class database:
         return r.json()    
     
 
-    def upload(self, filename, samples, deposit_id):
+    def upload_ns(self, filename, samples, deposit_id):
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
         r.raise_for_status()
