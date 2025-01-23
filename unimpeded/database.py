@@ -42,11 +42,11 @@ class database:
             samples = read_chains(f"../{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}")
         return filename, samples
     
-    def get_metadata(self, method, model, dataset):
+    def get_metadata(self, method, model, dataset, job_no):
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         metadata = {
             "metadata": {
-                "title": f"unimpeded: {model}_{dataset}",
+                "title": f"unimpeded: arrayjob_{job_no}_{model}_{dataset}",
                 "upload_type": "dataset",  # e.g., dataset, publication, image, software
                 "description": self.get_description(method, model, dataset),
                 "creators": [
