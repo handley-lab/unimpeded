@@ -3,6 +3,7 @@ from anesthetic import read_chains
 import os
 import datetime
 import pandas as pd
+#import yaml
 
 class database:
     def __init__(self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None):
@@ -69,7 +70,7 @@ class database:
         return r.json()    
     
 
-    def upload_ns(self, filename, samples, deposit_id):
+    def upload(self, filename, samples, deposit_id):
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
         r.raise_for_status()
@@ -88,6 +89,46 @@ class database:
             )
             r.raise_for_status()
         os.remove(f"./{filename}")
+        return r
+    
+    def get_yaml(self, method, model, dataset, loc):
+        if loc == 'hpc':
+            yaml_file_path = f'home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}.updated.yaml' # for the hpc
+        elif loc == 'local':
+            yaml_file_path = f'Users/ongdily/Documents/Cambridge/project2/codes/{method}/{model}/{dataset}/{dataset}.updated.yaml' # for local computer
+        with open(yaml_file_path, 'r') as file:
+            # Load the YAML content into a Python data structure (usually a dictionary)
+            yaml_data = yaml.safe_load(file)
+        return yaml_data
+
+    def upload_yaml(self, filename, deposit_id):
+        """
+        Uploads a YAML file to the Zenodo sandbox.
+
+        Args:
+            self: The class instance (if this function is part of a class).
+            filename: The name of the YAML file.
+            deposit_id: The Zenodo deposit ID.
+
+        Returns:
+            The JSON response from the Zenodo API.
+        """
+
+        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+        r = requests.get(deposit_url)
+        r.raise_for_status()
+        bucket_url = r.json().get("links", {}).get("bucket") 
+
+        path = f"/{filename}" 
+        params = {'access_token': self.ACCESS_TOKEN}
+        with open(path, "rb") as fp:
+            r = requests.put(
+                f"{bucket_url}/{filename}", 
+                data=fp,
+                params=params
+            )
+            r.raise_for_status()
+        
         return r.json()
 
     def download(self, deposit_id, filename): #filename=method_model_dataset
