@@ -144,6 +144,40 @@ class database:
         
         return r.json()
 
+    def download_yaml(self, deposit_id, method, model, dataset):
+        """
+        Downloads a YAML file from Zenodo sandbox to the local computer.
+
+        Args:
+            self: The class instance (if this function is part of a class).
+            deposit_id: The Zenodo deposit ID.
+            method, model, dataset: Components to form the filename.
+            download_path: The local path where the file should be saved.
+            
+        Returns:
+            None
+        """
+        # Build the URL to get the deposition's file metadata
+        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+        r = requests.get(deposit_url)
+        r.raise_for_status()
+        
+        # Extract the bucket URL and file information from the response
+        bucket_url = r.json().get("links", {}).get("bucket")
+        filename = f"{method}_{model}_{dataset}.yaml"
+        
+        # Form the URL to download the specific file
+        file_url = f"{bucket_url}/{filename}"
+        
+        # Make the GET request to download the file
+        file_response = requests.get(file_url, params={'access_token': self.ACCESS_TOKEN})
+        file_response.raise_for_status()
+        
+        # Save the file locally
+        with open(f'{filename}', "wb") as f:
+            f.write(file_response.content)
+        
+        print(f"File downloaded successfully: {f'{filename}'}")
 
 
     def download(self, deposit_id, filename): #filename=method_model_dataset
