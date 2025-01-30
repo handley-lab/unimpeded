@@ -4,7 +4,7 @@ import os
 import datetime
 import pandas as pd
 import yaml
-
+from io import BytesIO
 class database:
     def __init__(self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None):
         self.sandbox = sandbox
@@ -180,38 +180,35 @@ class database:
         print(f"File downloaded successfully: {f'{filename}'}")
 
 
-    def download(self, deposit_id, filename): #filename=method_model_dataset
+    def download(self, deposit_id, filename):
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
         r.raise_for_status()
+        
         if r.status_code == 200:
             deposit_info = r.json()
-            files = deposit_info['files'] # list of files in the deposit
-
+            files = deposit_info['files']
+            print("files:", files)
             downloads = []
+            
             for file in files:
-                if file['filename'] == f'{filename}':  # Check for your specific CSV file
+                if file['filename'] == filename:  # Check for your specific CSV file
                     download_url = file['links']['download']  # Direct download link
                     print("Download url:", download_url)
                     headers = {"Authorization": f"Bearer {self.ACCESS_TOKEN}"}
-            
-                
+                    
                     csv_r = requests.get(download_url, headers=headers)
                     csv_r.raise_for_status()
-                
+                    
                     if csv_r.status_code == 200:
-                        # Save the file locally
-                        with open(f'{filename}', 'wb') as f:
-                            f.write(csv_r.content)
-                        print(f"{filename} file downloaded successfully.")
-                        downloads.append(pd.read_csv(f'{filename}', index_col=0))
+                        # Read the CSV directly into a pandas DataFrame from memory
+                        downloads.append(pd.read_csv(BytesIO(csv_r.content)))
+                        print(f"{filename} file loaded into memory successfully.")
                     else:
-                        print(f"Error downloading CSV file:", csv_r.status_code)
-
+                        print(f"Error downloading {filename}:", csv_r.status_code)
             return downloads
         else:
             print("Error retrieving deposit metadata:", r.status_code, r.json())
-
 
     def publish(self, deposit_id, metadata):
         # Ask for metadata as compulsory input because it is required for secondary publishing, even if metadata is identical
