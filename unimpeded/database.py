@@ -192,20 +192,31 @@ class database:
             downloads = []
             
             for file in files:
-                if file['filename'] == filename:  # Check for your specific CSV file
+                if file['filename'] == filename:  # Check for your specific file
                     download_url = file['links']['download']  # Direct download link
                     print("Download url:", download_url)
                     headers = {"Authorization": f"Bearer {self.ACCESS_TOKEN}"}
                     
-                    csv_r = requests.get(download_url, headers=headers)
-                    csv_r.raise_for_status()
+                    file_r = requests.get(download_url, headers=headers)
+                    file_r.raise_for_status()
                     
-                    if csv_r.status_code == 200:
-                        # Read the CSV directly into a pandas DataFrame from memory
-                        downloads.append(pd.read_csv(BytesIO(csv_r.content)))
-                        print(f"{filename} file loaded into memory successfully.")
+                    if file_r.status_code == 200:
+                        # Handle CSV files
+                        if filename.endswith('.csv'):
+                            data = pd.read_csv(BytesIO(file_r.content))
+                            print(f"{filename} CSV file loaded successfully.")
+                        # Handle YAML files
+                        elif filename.endswith(('.yaml', '.yml')):
+                            data = yaml.safe_load(file_r.content.decode('utf-8'))
+                            print(f"{filename} YAML file loaded successfully.")
+                        else:
+                            print(f"Unsupported file type: {filename}")
+                            data = None
+                        
+                        if data is not None:
+                            downloads.append(data)
                     else:
-                        print(f"Error downloading {filename}:", csv_r.status_code)
+                        print(f"Error downloading {filename}:", file_r.status_code)
             return downloads
         else:
             print("Error retrieving deposit metadata:", r.status_code, r.json())
