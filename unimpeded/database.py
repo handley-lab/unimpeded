@@ -179,6 +179,16 @@ class database:
         
         print(f"File downloaded successfully: {f'{filename}'}")
 
+    def get_filename(self, method, model, dataset, filestype):
+        if filestype == 'samples':
+            filename = f"{method}_{model}_{dataset}.csv"
+        elif filestype == 'info':
+            filename = f"{method}_{model}_{dataset}.yaml"
+        else:
+            raise ValueError(f"Invalid file type: {filestype}. Expected 'samples' or 'info'.")
+        return filename
+
+
 
     def download(self, deposit_id, filename):
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
@@ -220,6 +230,14 @@ class database:
             return downloads
         else:
             print("Error retrieving deposit metadata:", r.status_code, r.json())
+
+    def download_samples(self, deposit_id, method, model, dataset):
+        filename = self.get_filename(method, model, dataset, 'samples')
+        return self.download(deposit_id, filename)
+    
+    def download_info(self, deposit_id, method, model, dataset):
+        filename = self.get_filename(method, model, dataset, 'info')
+        return self.download(deposit_id, filename)
 
     def publish(self, deposit_id, metadata):
         # Ask for metadata as compulsory input because it is required for secondary publishing, even if metadata is identical
