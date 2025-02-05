@@ -5,7 +5,18 @@ import datetime
 import pandas as pd
 import yaml
 from io import BytesIO
-class database:
+
+def get_filename(method, model, dataset, filestype): # a standalone function used by both DatabaseCreator and DatabaseExplorer
+    if filestype == 'samples':
+        filename = f"{method}_{model}_{dataset}.csv"
+    elif filestype == 'info':
+        filename = f"{method}_{model}_{dataset}.yaml"
+    elif filestype == 'prior_info':
+        filename = f"{method}_{model}_{dataset}.prior_info"
+    else:
+        raise ValueError(f"Invalid file type: {filestype}. Expected 'samples' or 'info'.")
+    return filename
+class DatabaseCreator:
     def __init__(self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None):
         self.sandbox = sandbox
         self.ACCESS_TOKEN = ACCESS_TOKEN
@@ -35,18 +46,18 @@ class database:
         return deposit_id
 
 
-    def get_description(self, method, model, dataset):
+    def create_description(self, method, model, dataset):
         description = f"Method:{method}, cosmological model:{model}, dataset:{dataset}"
         return description
 
 
-    def get_metadata(self, method, model, dataset, job_no):
+    def create_metadata(self, method, model, dataset):
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         metadata = {
             "metadata": {
-                "title": f"unimpeded: arrayjob_{job_no}_{model}_{dataset}",
+                "title": f"unimpeded: {model} {dataset}",
                 "upload_type": "dataset",  # e.g., dataset, publication, image, software
-                "description": self.get_description(method, model, dataset),
+                "description": self.create_description(method, model, dataset),
                 "creators": [
                     {"name": "Ong, Dily", "affiliation": "University of Cambridge"}
                 ],
@@ -66,18 +77,6 @@ class database:
                          json=metadata)
         r.raise_for_status()
         return r.json()    
-
-
-    def get_filename(self, method, model, dataset, filestype):
-        if filestype == 'samples':
-            filename = f"{method}_{model}_{dataset}.csv"
-        elif filestype == 'info':
-            filename = f"{method}_{model}_{dataset}.yaml"
-        elif filestype == 'prior_info':
-            filename = f"{method}_{model}_{dataset}.prior_info"
-        else:
-            raise ValueError(f"Invalid file type: {filestype}. Expected 'samples' or 'info'.")
-        return filename
     
 
     def get_samples(self, method, model, dataset, loc):
@@ -101,7 +100,7 @@ class database:
         params = {'access_token': self.ACCESS_TOKEN}
 
         samples = self.get_samples(method, model, dataset, loc)
-        filename = self.get_filename(method, model, dataset, filestype='samples')
+        filename = get_filename(method, model, dataset, filestype='samples')
 
         samples.to_csv(filename) 
         path = f"./{filename}"
@@ -135,7 +134,7 @@ class database:
         bucket_url = r.json().get("links", {}).get("bucket") 
         params = {'access_token': self.ACCESS_TOKEN}
 
-        filename = self.get_filename(method, model, dataset, filestype='info')
+        filename = get_filename(method, model, dataset, filestype='info')
         
         yaml_file_path = self.get_yaml_path(method, model, dataset, loc)
         with open(yaml_file_path, "rb") as fp:
@@ -168,7 +167,7 @@ class database:
         bucket_url = r.json().get("links", {}).get("bucket") 
         params = {'access_token': self.ACCESS_TOKEN}
 
-        filename = self.get_filename(method, model, dataset, filestype='prior_info')
+        filename = get_filename(method, model, dataset, filestype='prior_info')
         
         prior_info_file_path = self.get_prior_info_path(method, model, dataset, loc)
         with open(prior_info_file_path, "rb") as fp:
@@ -185,6 +184,84 @@ class database:
         
         return r
 
+    def get_deposit_ids_by_title(self, title):
+        """
+        Note: this codes is suppose to find all deposits with the given title, page by page until the last record, but somehow it just return the first 100 records. Not sure why and need to fix this later.
+        Retrieves first 100 deposit IDs that match the given title, 
+        and separates them into published and unpublished categories. Handles full pagination.
+
+        Args:
+            title (str): The title to search for.
+
+        Returns:
+            dict: A dictionary with two keys:
+                - "published": List of published deposit IDs
+                - "unpublished": List of unpublished deposit IDs
+        """
+        deposit_ids = {"published": [], "unpublished": []}
+        url = self.base_url  # Base URL for the API
+        params = {
+            'q': f'title:"{title}"',
+            'all_versions': True,  # Include all versions (published and unpublished)
+            'status': 'all',       # Ensure drafts/unpublished deposits are included
+            'access_token': self.ACCESS_TOKEN,
+            'size': 100  # Max results per page
+        }
+
+        try:
+            while url:
+                # Debugging statement to show the current URL being fetched
+                print(f"Fetching data from URL: {url}")
+                
+                # Fetch the data
+                r = requests.get(url, params=params if url == self.base_url else None)  # Use params only for the first request
+                r.raise_for_status()  # Raise an error if the request fails
+                response_data = r.json()
+
+                # Debugging: Log the response structure
+                print(f"Response structure: {response_data}")
+
+                # Process dictionary-based response with pagination
+                if isinstance(response_data, dict):
+                    for hit in response_data.get('hits', {}).get('hits', []):
+                        deposit_id = hit.get('id')
+                        is_published = hit.get('submitted', False)  # Check the "submitted" field
+                        if deposit_id:
+                            if is_published:
+                                deposit_ids["published"].append(deposit_id)
+                            else:
+                                deposit_ids["unpublished"].append(deposit_id)
+
+                    # Follow the next page URL if it exists
+                    url = response_data.get('links', {}).get('next')
+                    params = None  # Clear params after the first request since `url` includes them
+                
+                # Handle list-based responses (if applicable)
+                elif isinstance(response_data, list):
+                    for record in response_data:
+                        deposit_id = record.get('id')
+                        is_published = record.get('submitted', False)  # Check the "submitted" field
+                        if deposit_id:
+                            if is_published:
+                                deposit_ids["published"].append(deposit_id)
+                            else:
+                                deposit_ids["unpublished"].append(deposit_id)
+                    
+                    # Stop if no pagination is available for list-based responses
+                    url = None
+                
+                else:
+                    print("Unexpected response structure.")
+                    break
+
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred while fetching deposit IDs: {e}")
+
+        # Print published and unpublished deposit IDs
+        print(f"Published deposit IDs: {deposit_ids['published']}")
+        print(f"Unpublished deposit IDs: {deposit_ids['unpublished']}")
+
+        return deposit_ids
 
     def delete_unpublished_deposit_by_id(self, deposit_ids):
         """
@@ -289,6 +366,16 @@ class database:
             print(f"An error occurred: {e}")
             return None
 ####################### A new class? #######################
+class DatabaseExplorer:
+    def __init__(self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None):
+        self.sandbox = sandbox
+        self.ACCESS_TOKEN = ACCESS_TOKEN
+        if sandbox == True:
+            self.base_url = "https://sandbox.zenodo.org/api/deposit/depositions"
+            self.records_url = "https://sandbox.zenodo.org/api/records"
+        elif sandbox == False:
+            self.base_url = "https://zenodo.org/api/deposit/depositions"
+            self.records_url = "https://zenodo.org/api/records"
 
     def download(self, deposit_id, filename):
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
@@ -348,15 +435,15 @@ class database:
 
 
     def download_samples(self, deposit_id, method, model, dataset):
-        filename = self.get_filename(method, model, dataset, 'samples')
+        filename = get_filename(method, model, dataset, 'samples')
         return self.download(deposit_id, filename)
     
     def download_info(self, deposit_id, method, model, dataset):
-        filename = self.get_filename(method, model, dataset, 'info')
+        filename = get_filename(method, model, dataset, 'info')
         return self.download(deposit_id, filename)
 
     def download_prior_info(self, deposit_id, method, model, dataset):
-        filename = self.get_filename(method, model, dataset, 'prior_info')
+        filename = get_filename(method, model, dataset, 'prior_info')
         return self.download(deposit_id, filename)
 
 
@@ -440,7 +527,7 @@ class database:
         return deposit_ids       
 
 
-    def get_deposit_ids_by_description(self, description):
+    def get_published_deposit_ids_by_description(self, description):
         """
         Retrieves all deposit IDs that match the given description, including unpublished deposits,
         and separates them into published and unpublished categories.
