@@ -299,7 +299,6 @@ class database:
             deposit_info = r.json()
             files = deposit_info['files']
             print("files:", files)
-            downloads = []
             
             for file in files:
                 if file['filename'] == filename:  # Check for your specific file
@@ -321,17 +320,29 @@ class database:
                             print(f"{filename} YAML file loaded successfully.")
                         # Handle PRIOR_INFO files
                         elif filename.endswith('.prior_info'):
-                            data = file_r.content.decode('utf-8')
-                            print(f"{filename} PRIOR_INFO file loaded successfully.")
+                            try:
+                                # Decode the content and strip any leading/trailing whitespace
+                                raw_data = file_r.content.decode('utf-8-sig').strip()
+                                
+                                if raw_data:
+                                    # Parse the content into key-value pairs
+                                    data = {}
+                                    for line in raw_data.splitlines():
+                                        key, value = line.split('=')
+                                        data[key.strip()] = int(value.strip())
+                                    
+                                    print(f"{filename} PRIOR_INFO file loaded successfully.")
+                                else:
+                                    print(f"Warning: {filename} PRIOR_INFO file is empty.")
+                            except (UnicodeDecodeError, ValueError) as e:
+                                print(f"Error processing {filename}: {e}")
                         else:
                             print(f"Unsupported file type: {filename}")
                             data = None
                         
-                        if data is not None:
-                            downloads.append(data)
                     else:
                         print(f"Error downloading {filename}:", file_r.status_code)
-            return downloads
+            return data
         else:
             print("Error retrieving deposit metadata:", r.status_code, r.json())
 
