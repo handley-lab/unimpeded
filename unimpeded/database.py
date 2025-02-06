@@ -46,18 +46,18 @@ class DatabaseCreator:
         return deposit_id
 
 
-    def create_description(self, method, model, dataset):
-        description = f"Method:{method}, cosmological model:{model}, dataset:{dataset}"
+    def create_description(self, model, dataset):
+        description = f"cosmological model:{model}, dataset:{dataset}"
         return description
 
 
-    def create_metadata(self, method, model, dataset):
+    def create_metadata(self, model, dataset):
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         metadata = {
             "metadata": {
                 "title": f"unimpeded: {model} {dataset}",
                 "upload_type": "dataset",  # e.g., dataset, publication, image, software
-                "description": self.create_description(method, model, dataset),
+                "description": self.create_description(model, dataset),
                 "creators": [
                     {"name": "Ong, Dily", "affiliation": "University of Cambridge"}
                 ],
@@ -104,11 +104,15 @@ class DatabaseCreator:
 
         samples.to_csv(filename) 
         path = f"./{filename}"
+        headers = {
+            "Content-Type": "application/octet-stream"
+        }        
         with open(path, "rb") as fp:
             r = requests.put(
                 f"{bucket_url}/{filename}",
                 data=fp,
-                params=params
+                params=params,
+                headers=headers
             )
             r.raise_for_status()
             if r.status_code == 201:
