@@ -6,17 +6,19 @@ import pandas as pd
 import yaml
 from io import BytesIO
 
-def get_filename(method, model, dataset, filestype): # a standalone function used by both DatabaseCreator and DatabaseExplorer
-    if filestype == 'samples':
-        filename = f"{method}_{model}_{dataset}.csv"
-    elif filestype == 'info':
-        filename = f"{method}_{model}_{dataset}.yaml"
-    elif filestype == 'prior_info':
-        filename = f"{method}_{model}_{dataset}.prior_info"
-    else:
-        raise ValueError(f"Invalid file type: {filestype}. Expected 'samples' or 'info'.")
-    return filename
-class DatabaseCreator:
+class Database:
+    def get_filename(self, method, model, dataset, filestype): # a standalone function used by both DatabaseCreator and DatabaseExplorer
+        if filestype == 'samples':
+            filename = f"{method}_{model}_{dataset}.csv"
+        elif filestype == 'info':
+            filename = f"{method}_{model}_{dataset}.yaml"
+        elif filestype == 'prior_info':
+            filename = f"{method}_{model}_{dataset}.prior_info"
+        else:
+            raise ValueError(f"Invalid file type: {filestype}. Expected 'samples' or 'info'.")
+        return filename
+    
+class DatabaseCreator(Database):
     def __init__(self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None):
         self.sandbox = sandbox
         self.ACCESS_TOKEN = ACCESS_TOKEN
@@ -370,7 +372,7 @@ class DatabaseCreator:
             print(f"An error occurred: {e}")
             return None
 ####################### A new class? #######################
-class DatabaseExplorer:
+class DatabaseExplorer(Database):
     def __init__(self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None):
         self.sandbox = sandbox
         self.ACCESS_TOKEN = ACCESS_TOKEN
@@ -439,15 +441,15 @@ class DatabaseExplorer:
 
 
     def download_samples(self, deposit_id, method, model, dataset):
-        filename = get_filename(method, model, dataset, 'samples')
+        filename = self.get_filename(method, model, dataset, 'samples')
         return self.download(deposit_id, filename)
     
     def download_info(self, deposit_id, method, model, dataset):
-        filename = get_filename(method, model, dataset, 'info')
+        filename = self.get_filename(method, model, dataset, 'info')
         return self.download(deposit_id, filename)
 
     def download_prior_info(self, deposit_id, method, model, dataset):
-        filename = get_filename(method, model, dataset, 'prior_info')
+        filename = self.get_filename(method, model, dataset, 'prior_info')
         return self.download(deposit_id, filename)
 
 
