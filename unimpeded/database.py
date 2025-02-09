@@ -7,7 +7,7 @@ import yaml
 from io import BytesIO
 
 class Database:
-    def get_filename(self, method, model, dataset, filestype): # a standalone function used by both DatabaseCreator and DatabaseExplorer
+    def get_filename(self, method, model, dataset, filestype):
         if filestype == 'samples':
             filename = f"{method}_{model}_{dataset}.csv"
         elif filestype == 'info':
@@ -102,7 +102,7 @@ class DatabaseCreator(Database):
         params = {'access_token': self.ACCESS_TOKEN}
 
         samples = self.get_samples(method, model, dataset, loc)
-        filename = get_filename(method, model, dataset, filestype='samples')
+        filename = self.get_filename(method, model, dataset, filestype='samples')
 
         samples.to_csv(filename) 
         path = f"./{filename}"
@@ -140,7 +140,7 @@ class DatabaseCreator(Database):
         bucket_url = r.json().get("links", {}).get("bucket") 
         params = {'access_token': self.ACCESS_TOKEN}
 
-        filename = get_filename(method, model, dataset, filestype='info')
+        filename = self.get_filename(method, model, dataset, filestype='info')
         
         yaml_file_path = self.get_yaml_path(method, model, dataset, loc)
         with open(yaml_file_path, "rb") as fp:
@@ -173,7 +173,7 @@ class DatabaseCreator(Database):
         bucket_url = r.json().get("links", {}).get("bucket") 
         params = {'access_token': self.ACCESS_TOKEN}
 
-        filename = get_filename(method, model, dataset, filestype='prior_info')
+        filename = self.get_filename(method, model, dataset, filestype='prior_info')
         
         prior_info_file_path = self.get_prior_info_path(method, model, dataset, loc)
         with open(prior_info_file_path, "rb") as fp:
@@ -191,19 +191,6 @@ class DatabaseCreator(Database):
         return r
 
     def get_deposit_ids_by_title(self, title):
-        """
-        Note: this codes is suppose to find all deposits with the given title, page by page until the last record, but somehow it just return the first 100 records. Not sure why and need to fix this later.
-        Retrieves first 100 deposit IDs that match the given title, 
-        and separates them into published and unpublished categories. Handles full pagination.
-
-        Args:
-            title (str): The title to search for.
-
-        Returns:
-            dict: A dictionary with two keys:
-                - "published": List of published deposit IDs
-                - "unpublished": List of unpublished deposit IDs
-        """
         deposit_ids = {"published": [], "unpublished": []}
         url = self.base_url  # Base URL for the API
         params = {
@@ -211,7 +198,7 @@ class DatabaseCreator(Database):
             'all_versions': True,  # Include all versions (published and unpublished)
             'status': 'all',       # Ensure drafts/unpublished deposits are included
             'access_token': self.ACCESS_TOKEN,
-            'size': 100  # Max results per page
+            'size': 1000  # Max deposit results 
         }
 
         try:
@@ -267,6 +254,62 @@ class DatabaseCreator(Database):
         print(f"Published deposit IDs: {deposit_ids['published']}")
         print(f"Unpublished deposit IDs: {deposit_ids['unpublished']}")
 
+        return deposit_ids
+
+    def get_deposit_ids_by_title_original(self, title):
+        """
+        # Note: This functions returning the first 25 matching deposits
+        Retrieves all deposit IDs that match the given title, including unpublished deposits,
+        and separates them into published and unpublished categories.
+        Args:
+            title (str): The title to search for.
+        Returns:
+            dict: A dictionary with two keys:
+                - "published": List of published deposit IDs
+                - "unpublished": List of unpublished deposit IDs
+        """
+        deposit_ids = {"published": [], "unpublished": []}
+        try:
+            # Include drafts/unpublished records by adding `status=all`
+            r = requests.get(
+                self.base_url,
+                params={
+                    'q': f'title:"{title}"',
+                    'all_versions': True,  # Include all versions (published and unpublished)
+                    'status': 'all',       # Ensure drafts/unpublished deposits are included
+                    'size': 1000,  # Request up to 100 results per page
+                    'access_token': self.ACCESS_TOKEN
+                }
+            )
+            r.raise_for_status()
+            response_data = r.json()
+            # Handle response if it is a list
+            if isinstance(response_data, list):
+                for record in response_data:
+                    deposit_id = record.get('id')
+                    is_published = record.get('submitted', False)  # Check the "submitted" field
+                    if deposit_id:
+                        if is_published:
+                            deposit_ids["published"].append(deposit_id)
+                        else:
+                            deposit_ids["unpublished"].append(deposit_id)
+            # Handle response if it is a dictionary with nested structure
+            elif isinstance(response_data, dict):
+                for hit in response_data.get('hits', {}).get('hits', []):
+                    deposit_id = hit.get('id')
+                    is_published = hit.get('submitted', False)  # Check the "submitted" field
+                    if deposit_id:
+                        if is_published:
+                            deposit_ids["published"].append(deposit_id)
+                        else:
+                            deposit_ids["unpublished"].append(deposit_id)
+            else:
+                print("Unexpected response structure.")
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred while fetching deposit IDs: {e}")
+        # Print published and unpublished deposit IDs
+        print(f"Published deposit IDs: {deposit_ids['published']}")
+        print(f"Unpublished deposit IDs: {deposit_ids['unpublished']}")
         return deposit_ids
 
     def delete_unpublished_deposit_by_id(self, deposit_ids):
