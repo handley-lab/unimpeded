@@ -366,9 +366,19 @@ class DatabaseCreator(Database):
                 results.append({'deposit_id': deposit_id, 'status': 'Error'})
 
         return results
-    
 
-    def publish(self, deposit_id, metadata):
+    def get_metadata(self, deposit_id):
+        metadata_url = f"{self.base_url}/{deposit_id}"
+        try:
+            response = requests.get(metadata_url, params={'access_token': self.ACCESS_TOKEN})
+            response.raise_for_status()
+            deposit_data = response.json()
+            return deposit_data.get('metadata', {})
+        except requests.exceptions.HTTPError as http_err:
+            print(f"Failed to fetch metadata for deposit ID {deposit_id}. Error: {http_err}")
+            return None   
+
+    def publish_old(self, deposit_id, metadata):
         # Ask for metadata as compulsory input because it is required for secondary publishing, even if metadata is identical
         publish_url = f"{self.base_url}/{deposit_id}/actions/publish"   
         # Publish the deposit
@@ -379,7 +389,33 @@ class DatabaseCreator(Database):
         r.json()
         r.raise_for_status()
         return r.json()
-    
+
+    def publish(self, deposit_id, metadata):
+        publish_url = f"{self.base_url}/{deposit_id}/actions/publish"
+
+        try:
+            response = requests.post(
+                publish_url,
+                params={'access_token': self.ACCESS_TOKEN},
+                json=metadata
+            )
+            response.raise_for_status()
+
+            result = response.json()
+            title = metadata.get('title', 'Unknown Title')
+            concept_doi = result.get('conceptdoi', 'N/A')
+
+            print(f"{title} (Deposit ID: {deposit_id}) is published successfully. Concept DOI: {concept_doi}")
+            #return result
+
+        except requests.exceptions.HTTPError as http_err:
+            error_code = response.status_code if 'response' in locals() else 'N/A'
+            title = metadata.get('title', 'Unknown Title')
+            print(f"{title} (Deposit ID: {deposit_id}) publishing failed. Error code: {error_code}")
+            print(f"Error details: {http_err}")
+        except Exception as err:
+            print(f"An unexpected error occurred: {err}")
+
     def newversion(self, deposit_id):
         """
          Used to create a new version of an already published Zenodo deposit.
