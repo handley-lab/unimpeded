@@ -1,5 +1,5 @@
 import requests
-from anesthetic import read_chains
+from anesthetic import read_chains, read_csv
 import os
 import datetime
 import pandas as pd
@@ -519,17 +519,20 @@ class DatabaseExplorer(Database):
             print("Error retrieving deposit metadata:", r.status_code, r.json())
 
 
-    def download_samples(self, deposit_id, method, model, dataset):
+    def download_samples(self, method, model, dataset):
         filename = self.get_filename(method, model, dataset, 'samples')
+        deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         print("filename:", filename)
         return self.download(deposit_id, filename)
     
-    def download_info(self, deposit_id, method, model, dataset):
+    def download_info(self, method, model, dataset):
         filename = self.get_filename(method, model, dataset, 'info')
+        deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
-    def download_prior_info(self, deposit_id, method, model, dataset):
+    def download_prior_info(self, method, model, dataset):
         filename = self.get_filename(method, model, dataset, 'prior_info')
+        deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
 
