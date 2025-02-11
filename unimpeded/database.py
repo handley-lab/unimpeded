@@ -15,7 +15,7 @@ class Database:
         elif filestype == 'prior_info':
             filename = f"{method}_{model}_{dataset}.prior_info"
         else:
-            raise ValueError(f"Invalid file type: {filestype}. Expected 'samples' or 'info'.")
+            raise ValueError(f"Invalid file type: {filestype}. Expected 'samples', 'info' or 'prior_info'.")
         return filename
     
 class DatabaseCreator(Database):
@@ -28,9 +28,6 @@ class DatabaseCreator(Database):
         elif sandbox == False:
             self.base_url = "https://zenodo.org/api/deposit/depositions"
             self.records_url = "https://zenodo.org/api/records"
-
-
-        #self.bucket_url = bucket_url
     
 
     def create_deposit(self):
@@ -44,7 +41,6 @@ class DatabaseCreator(Database):
                    json={})
         r.raise_for_status()           
         deposit_id = r.json()['id']
-        #bucket_url = r.json()['links']['bucket']
         return deposit_id
 
 
@@ -58,7 +54,7 @@ class DatabaseCreator(Database):
         metadata = {
             "metadata": {
                 "title": f"unimpeded: {model} {dataset}",
-                "upload_type": "dataset",  # e.g., dataset, publication, image, software
+                "upload_type": "dataset",
                 "description": self.create_description(model, dataset),
                 "creators": [
                     {"name": "Ong, Dily", "affiliation": "University of Cambridge"}
@@ -78,7 +74,7 @@ class DatabaseCreator(Database):
                          params={'access_token': self.ACCESS_TOKEN},
                          json=metadata)
         r.raise_for_status()
-        return r.json()    
+        return r   
     
 
     def get_samples(self, method, model, dataset, loc):
@@ -98,7 +94,7 @@ class DatabaseCreator(Database):
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
         r.raise_for_status()
-        bucket_url = r.json().get("links", {}).get("bucket") # retrieve bucket_url from deposit_id
+        bucket_url = r.json().get("links", {}).get("bucket")
         params = {'access_token': self.ACCESS_TOKEN}
 
         samples = self.get_samples(method, model, dataset, loc)
@@ -127,9 +123,9 @@ class DatabaseCreator(Database):
     
     def get_yaml_path(self, method, model, dataset, loc):
         if loc == 'hpc':
-            yaml_file_path = f'/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}.updated.yaml' # for the hpc
+            yaml_file_path = f'/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}.updated.yaml'
         elif loc == 'local':
-            yaml_file_path = f'/Users/ongdily/Documents/Cambridge/project2/codes/{method}/{model}/{dataset}/{dataset}.updated.yaml' # for local computer
+            yaml_file_path = f'/Users/ongdily/Documents/Cambridge/project2/codes/{method}/{model}/{dataset}/{dataset}.updated.yaml'
         return yaml_file_path
     
 
@@ -160,9 +156,9 @@ class DatabaseCreator(Database):
 
     def get_prior_info_path(self, method, model, dataset, loc):
         if loc == 'hpc':
-            path = f'/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info' # for the hpc
+            path = f'/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info' 
         elif loc == 'local':
-            path = f'/Users/ongdily/Documents/Cambridge/project2/codes/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info' # for local computer
+            path = f'/Users/ongdily/Documents/Cambridge/project2/codes/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info'
         return path 
     
 
@@ -190,15 +186,15 @@ class DatabaseCreator(Database):
         
         return r
 
-    def get_deposit_ids_by_title(self, title):
+    def get_deposit_ids_by_title(self, title, size=1000):
         deposit_ids = {"published": [], "unpublished": []}
-        url = self.base_url  # Base URL for the API
+        url = self.base_url  
         params = {
             'q': f'title:"{title}"',
             'all_versions': True,  # Include all versions (published and unpublished)
             'status': 'all',       # Ensure drafts/unpublished deposits are included
             'access_token': self.ACCESS_TOKEN,
-            'size': 1000  # Max deposit results 
+            'size': size  # Maximum number of deposit results 
         }
 
         try:
@@ -369,8 +365,6 @@ class DatabaseCreator(Database):
                     f"{self.base_url}/{deposit_id}/actions/newversion",
                     params={'access_token': self.ACCESS_TOKEN}
                 )
-            	#r = requests.post(f'{self.base_url}/{deposit_id}/actions/edit',
-                  #params={'access_token': ACCESS_TOKEN}
 
                 new_version_response.raise_for_status()
                 new_version_data = new_version_response.json()
@@ -385,6 +379,23 @@ class DatabaseCreator(Database):
             print(f"An error occurred: {e}")
             return None
 
+    def get_concept_doi(self, deposit_id):
+        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+        
+        # Fetch deposit details
+        response = requests.get(deposit_url)
+        response.raise_for_status()
+        
+        deposit = response.json()
+        concept_doi = deposit.get('conceptdoi')
+        
+        if concept_doi:
+            print(f"Concept DOI: {concept_doi}")
+            return concept_doi
+        else:
+            print("Concept DOI not found. Ensure the deposit is published.")
+            return None
+        
 class DatabaseExplorer(Database):
     def __init__(self, sandbox=False, base_url=None, records_url=None):
         self.sandbox = sandbox
@@ -403,15 +414,12 @@ class DatabaseExplorer(Database):
         if r.status_code == 200:
             deposit_info = r.json()
             files = deposit_info['files']
-            print("files:", files)
             
             for file in files:
                 if file['key'] == filename:  # Check for your specific file
                     download_url = file['links']['self']  # Direct download link
                     print("Download url:", download_url)
-                    #headers = {"Authorization": f"Bearer {self.ACCESS_TOKEN}"}
-                    
-                    #file_r = requests.get(download_url, headers=headers)
+
                     file_r = requests.get(download_url)
                     file_r.raise_for_status()
                     
@@ -456,7 +464,6 @@ class DatabaseExplorer(Database):
     def download_samples(self, method, model, dataset):
         filename = self.get_filename(method, model, dataset, 'samples')
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
-        print("filename:", filename)
         return self.download(deposit_id, filename)
     
     def download_info(self, method, model, dataset):
@@ -503,19 +510,4 @@ class DatabaseExplorer(Database):
             return None    
 
 
-    def get_concept_doi(self, deposit_id):
-        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
-        
-        # Fetch deposit details
-        response = requests.get(deposit_url)
-        response.raise_for_status()
-        
-        deposit = response.json()
-        concept_doi = deposit.get('conceptdoi')
-        
-        if concept_doi:
-            print(f"Concept DOI: {concept_doi}")
-            return concept_doi
-        else:
-            print("Concept DOI not found. Ensure the deposit is published.")
-            return None  
+  
