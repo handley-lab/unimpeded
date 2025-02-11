@@ -450,11 +450,10 @@ class DatabaseCreator(Database):
         except requests.exceptions.RequestException as e:
             print(f"An error occurred: {e}")
             return None
-####################### A new class? #######################
+
 class DatabaseExplorer(Database):
-    def __init__(self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None):
+    def __init__(self, sandbox=False, base_url=None, records_url=None):
         self.sandbox = sandbox
-        self.ACCESS_TOKEN = ACCESS_TOKEN
         if sandbox == True:
             self.base_url = "https://sandbox.zenodo.org/api/deposit/depositions"
             self.records_url = "https://sandbox.zenodo.org/api/records"
@@ -463,7 +462,7 @@ class DatabaseExplorer(Database):
             self.records_url = "https://zenodo.org/api/records"
 
     def download(self, deposit_id, filename):
-        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+        deposit_url = f"{self.records_url}/{deposit_id}"
         r = requests.get(deposit_url)
         r.raise_for_status()
         
@@ -473,12 +472,13 @@ class DatabaseExplorer(Database):
             print("files:", files)
             
             for file in files:
-                if file['filename'] == filename:  # Check for your specific file
-                    download_url = file['links']['download']  # Direct download link
+                if file['key'] == filename:  # Check for your specific file
+                    download_url = file['links']['self']  # Direct download link
                     print("Download url:", download_url)
-                    headers = {"Authorization": f"Bearer {self.ACCESS_TOKEN}"}
+                    #headers = {"Authorization": f"Bearer {self.ACCESS_TOKEN}"}
                     
-                    file_r = requests.get(download_url, headers=headers)
+                    #file_r = requests.get(download_url, headers=headers)
+                    file_r = requests.get(download_url)
                     file_r.raise_for_status()
                     
                     if file_r.status_code == 200:
@@ -521,6 +521,7 @@ class DatabaseExplorer(Database):
 
     def download_samples(self, deposit_id, method, model, dataset):
         filename = self.get_filename(method, model, dataset, 'samples')
+        print("filename:", filename)
         return self.download(deposit_id, filename)
     
     def download_info(self, deposit_id, method, model, dataset):
@@ -610,6 +611,38 @@ class DatabaseExplorer(Database):
         print(f"Unpublished deposit IDs: {deposit_ids['unpublished']}")
 
         return deposit_ids       
+    
+    def get_deposit_id_by_title_users(self, model, dataset):
+        """
+        Search for a single deposit by title without an access token.
+
+        Args:
+            title (str): The title to search for.
+
+        Returns:
+            str: The deposit ID of the first matching result, or None if not found.
+        """
+        params = {
+            'q': f'title:"unimpeded: {model} {dataset}"',
+            'size': 1  # Limit results to 1 for simplicity
+        }
+
+        try:
+            response = requests.get(self.records_url, params=params)
+            response.raise_for_status()
+            data = response.json()
+
+            # Extract deposit ID if available
+            hits = data.get('hits', {}).get('hits', [])
+            if hits:
+                return hits[0].get('id')
+            else:
+                print("No deposit found with the given title.")
+                return None
+
+        except requests.RequestException as e:
+            print(f"Error fetching deposit: {e}")
+            return None    
 
 
     def get_published_deposit_ids_by_description(self, description):
