@@ -256,61 +256,6 @@ class DatabaseCreator(Database):
 
         return deposit_ids
 
-    def get_deposit_ids_by_title_original(self, title):
-        """
-        # Note: This functions returning the first 25 matching deposits
-        Retrieves all deposit IDs that match the given title, including unpublished deposits,
-        and separates them into published and unpublished categories.
-        Args:
-            title (str): The title to search for.
-        Returns:
-            dict: A dictionary with two keys:
-                - "published": List of published deposit IDs
-                - "unpublished": List of unpublished deposit IDs
-        """
-        deposit_ids = {"published": [], "unpublished": []}
-        try:
-            # Include drafts/unpublished records by adding `status=all`
-            r = requests.get(
-                self.base_url,
-                params={
-                    'q': f'title:"{title}"',
-                    'all_versions': True,  # Include all versions (published and unpublished)
-                    'status': 'all',       # Ensure drafts/unpublished deposits are included
-                    'size': 1000,  # Request up to 100 results per page
-                    'access_token': self.ACCESS_TOKEN
-                }
-            )
-            r.raise_for_status()
-            response_data = r.json()
-            # Handle response if it is a list
-            if isinstance(response_data, list):
-                for record in response_data:
-                    deposit_id = record.get('id')
-                    is_published = record.get('submitted', False)  # Check the "submitted" field
-                    if deposit_id:
-                        if is_published:
-                            deposit_ids["published"].append(deposit_id)
-                        else:
-                            deposit_ids["unpublished"].append(deposit_id)
-            # Handle response if it is a dictionary with nested structure
-            elif isinstance(response_data, dict):
-                for hit in response_data.get('hits', {}).get('hits', []):
-                    deposit_id = hit.get('id')
-                    is_published = hit.get('submitted', False)  # Check the "submitted" field
-                    if deposit_id:
-                        if is_published:
-                            deposit_ids["published"].append(deposit_id)
-                        else:
-                            deposit_ids["unpublished"].append(deposit_id)
-            else:
-                print("Unexpected response structure.")
-        except requests.exceptions.RequestException as e:
-            print(f"An error occurred while fetching deposit IDs: {e}")
-        # Print published and unpublished deposit IDs
-        print(f"Published deposit IDs: {deposit_ids['published']}")
-        print(f"Unpublished deposit IDs: {deposit_ids['unpublished']}")
-        return deposit_ids
 
     def delete_unpublished_deposit_by_id(self, deposit_ids):
         """
@@ -378,17 +323,6 @@ class DatabaseCreator(Database):
             print(f"Failed to fetch metadata for deposit ID {deposit_id}. Error: {http_err}")
             return None   
 
-    def publish_old(self, deposit_id, metadata):
-        # Ask for metadata as compulsory input because it is required for secondary publishing, even if metadata is identical
-        publish_url = f"{self.base_url}/{deposit_id}/actions/publish"   
-        # Publish the deposit
-        r = requests.post(publish_url,
-                    params={'access_token': self.ACCESS_TOKEN},
-                    json=metadata
-                    )
-        r.json()
-        r.raise_for_status()
-        return r.json()
 
     def publish(self, deposit_id, metadata):
         publish_url = f"{self.base_url}/{deposit_id}/actions/publish"
@@ -535,85 +469,6 @@ class DatabaseExplorer(Database):
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
-
-    def get_deposit_ids_by_title(self, title):
-        """
-        Note: this codes is suppose to find all deposits with the given title, page by page until the last record, but somehow it just return the first 100 records. Not sure why and need to fix this later.
-        Retrieves first 100 deposit IDs that match the given title, 
-        and separates them into published and unpublished categories. Handles full pagination.
-
-        Args:
-            title (str): The title to search for.
-
-        Returns:
-            dict: A dictionary with two keys:
-                - "published": List of published deposit IDs
-                - "unpublished": List of unpublished deposit IDs
-        """
-        deposit_ids = {"published": [], "unpublished": []}
-        url = self.base_url  # Base URL for the API
-        params = {
-            'q': f'title:"{title}"',
-            'all_versions': True,  # Include all versions (published and unpublished)
-            'status': 'all',       # Ensure drafts/unpublished deposits are included
-            'access_token': self.ACCESS_TOKEN,
-            'size': 100  # Max results per page
-        }
-
-        try:
-            while url:
-                # Debugging statement to show the current URL being fetched
-                print(f"Fetching data from URL: {url}")
-                
-                # Fetch the data
-                r = requests.get(url, params=params if url == self.base_url else None)  # Use params only for the first request
-                r.raise_for_status()  # Raise an error if the request fails
-                response_data = r.json()
-
-                # Debugging: Log the response structure
-                print(f"Response structure: {response_data}")
-
-                # Process dictionary-based response with pagination
-                if isinstance(response_data, dict):
-                    for hit in response_data.get('hits', {}).get('hits', []):
-                        deposit_id = hit.get('id')
-                        is_published = hit.get('submitted', False)  # Check the "submitted" field
-                        if deposit_id:
-                            if is_published:
-                                deposit_ids["published"].append(deposit_id)
-                            else:
-                                deposit_ids["unpublished"].append(deposit_id)
-
-                    # Follow the next page URL if it exists
-                    url = response_data.get('links', {}).get('next')
-                    params = None  # Clear params after the first request since `url` includes them
-                
-                # Handle list-based responses (if applicable)
-                elif isinstance(response_data, list):
-                    for record in response_data:
-                        deposit_id = record.get('id')
-                        is_published = record.get('submitted', False)  # Check the "submitted" field
-                        if deposit_id:
-                            if is_published:
-                                deposit_ids["published"].append(deposit_id)
-                            else:
-                                deposit_ids["unpublished"].append(deposit_id)
-                    
-                    # Stop if no pagination is available for list-based responses
-                    url = None
-                
-                else:
-                    print("Unexpected response structure.")
-                    break
-
-        except requests.exceptions.RequestException as e:
-            print(f"An error occurred while fetching deposit IDs: {e}")
-
-        # Print published and unpublished deposit IDs
-        print(f"Published deposit IDs: {deposit_ids['published']}")
-        print(f"Unpublished deposit IDs: {deposit_ids['unpublished']}")
-
-        return deposit_ids       
     
     def get_deposit_id_by_title_users(self, model, dataset):
         """
@@ -646,69 +501,6 @@ class DatabaseExplorer(Database):
         except requests.RequestException as e:
             print(f"Error fetching deposit: {e}")
             return None    
-
-
-    def get_published_deposit_ids_by_description(self, description):
-        """
-        Retrieves all deposit IDs that match the given description, including unpublished deposits,
-        and separates them into published and unpublished categories.
-
-        Args:
-            description (str): The description to search for.
-
-        Returns:
-            dict: A dictionary with two keys:
-                - "published": List of published deposit IDs
-                - "unpublished": List of unpublished deposit IDs
-        """
-        deposit_ids = {"published": [], "unpublished": []}
-        try:
-            # Include drafts/unpublished records by adding `status=all`
-            r = requests.get(
-                self.base_url,
-                params={
-                    'q': f'description:"{description}"',
-                    'all_versions': True,  # Include all versions (published and unpublished)
-                    'status': 'all',       # Ensure drafts/unpublished deposits are included
-                    'access_token': self.ACCESS_TOKEN
-                }
-            )
-            r.raise_for_status()
-            response_data = r.json()
-
-            # Handle response if it is a list
-            if isinstance(response_data, list):
-                for record in response_data:
-                    deposit_id = record.get('id')
-                    is_published = record.get('submitted', False)  # Check the "submitted" field
-                    if deposit_id:
-                        if is_published:
-                            deposit_ids["published"].append(deposit_id)
-                        else:
-                            deposit_ids["unpublished"].append(deposit_id)
-
-            # Handle response if it is a dictionary with nested structure
-            elif isinstance(response_data, dict):
-                for hit in response_data.get('hits', {}).get('hits', []):
-                    deposit_id = hit.get('id')
-                    is_published = hit.get('submitted', False)  # Check the "submitted" field
-                    if deposit_id:
-                        if is_published:
-                            deposit_ids["published"].append(deposit_id)
-                        else:
-                            deposit_ids["unpublished"].append(deposit_id)
-                        
-            else:
-                print("Unexpected response structure.")
-        except requests.exceptions.RequestException as e:
-            print(f"An error occurred while fetching deposit IDs: {e}")
-
-        # Print published and unpublished deposit IDs
-        print(f"Published deposit IDs: {deposit_ids['published']}")
-        print(f"Unpublished deposit IDs: {deposit_ids['unpublished']}")
-
-        return deposit_ids
-
 
 
     def get_concept_doi(self, deposit_id):
