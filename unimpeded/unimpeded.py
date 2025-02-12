@@ -1,4 +1,5 @@
 """Loading datasets."""
+
 from anesthetic import read_chains
 
 
@@ -11,8 +12,9 @@ class unimpeded:
         The location where the datasets are stored.
 
     """
+
     def __init__(self, **kwargs):
-        self.location = kwargs.pop('location', None)
+        self.location = kwargs.pop("location", None)
 
     def get(self, model, dataset, method):
         """Get the samples from the dataset.
@@ -28,5 +30,6 @@ class unimpeded:
         """
         samples = read_chains(
             self.location + f"{method}/{model}/{dataset}/"
-            f"{dataset}_polychord_raw/{dataset}")
+            f"{dataset}_polychord_raw/{dataset}"
+        )
         return samples
