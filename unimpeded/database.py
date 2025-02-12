@@ -1,7 +1,6 @@
 import datetime
 import os
 from io import BytesIO
-
 import pandas as pd
 import requests
 import yaml
@@ -9,7 +8,26 @@ from anesthetic import read_chains
 
 
 class Database:
+    """
+    Base class providing utility methods for generating file names for different file types.
+    """
+
     def get_filename(self, method, model, dataset, filestype):
+        """
+        Generate a filename based on the provided method, model, dataset, and file type.
+
+        Args:
+            method (str): The method used (e.g., 'ns' or 'mcmc').
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+            filestype (str): The type of file. Must be one of 'samples', 'info', or 'prior_info'.
+
+        Returns:
+            str: The generated filename.
+
+        Raises:
+            ValueError: If the filestype is not one of the expected types.
+        """
         if filestype == "samples":
             filename = f"{method}_{model}_{dataset}.csv"
         elif filestype == "info":
@@ -24,9 +42,20 @@ class Database:
 
 
 class DatabaseCreator(Database):
-    def __init__(
-        self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None
-    ):
+    """
+    A class for creating and managing deposits on Zenodo. Inherits from Database to utilize filename generation.
+    """
+
+    def __init__(self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None):
+        """
+        Initialize the DatabaseCreator instance.
+
+        Args:
+            sandbox (bool, optional): Whether to use the Zenodo sandbox environment. Defaults to True.
+            ACCESS_TOKEN (str, optional): The access token for authentication.
+            base_url (str, optional): The base URL for deposit endpoints.
+            records_url (str, optional): The URL for records endpoints.
+        """
         self.sandbox = sandbox
         self.ACCESS_TOKEN = ACCESS_TOKEN
         if sandbox == True:
@@ -37,23 +66,42 @@ class DatabaseCreator(Database):
             self.records_url = "https://zenodo.org/api/records"
 
     def create_deposit(self):
-        """Create a new empty deposit on Zenodo
+        """
+        Create a new empty deposit on Zenodo.
 
         Returns:
-        deposit_id (int): The ID of the new deposit on Zenodo
+            int: The ID of the new deposit on Zenodo.
         """
-        r = requests.post(
-            self.base_url, params={"access_token": self.ACCESS_TOKEN}, json={}
-        )
+        r = requests.post(self.base_url, params={"access_token": self.ACCESS_TOKEN}, json={})
         r.raise_for_status()
         deposit_id = r.json()["id"]
         return deposit_id
 
     def create_description(self, model, dataset):
+        """
+        Create a description string for the deposit based on model and dataset.
+
+        Args:
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+
+        Returns:
+            str: The description string.
+        """
         description = f"cosmological model:{model}, dataset:{dataset}"
         return description
 
     def create_metadata(self, model, dataset):
+        """
+        Create metadata for a deposit on Zenodo.
+
+        Args:
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+
+        Returns:
+            dict: The metadata dictionary for the deposit.
+        """
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         metadata = {
             "metadata": {
@@ -74,6 +122,16 @@ class DatabaseCreator(Database):
         return metadata
 
     def update_metadata(self, deposit_id, metadata):
+        """
+        Update the metadata of an existing deposit.
+
+        Args:
+            deposit_id (int): The ID of the deposit to update.
+            metadata (dict): The metadata to update.
+
+        Returns:
+            Response: The requests response object.
+        """
         r = requests.put(
             f"{self.base_url}/{deposit_id}",
             params={"access_token": self.ACCESS_TOKEN},
@@ -83,6 +141,18 @@ class DatabaseCreator(Database):
         return r
 
     def get_samples(self, method, model, dataset, loc):
+        """
+        Retrieve samples from a specified location based on method, model, and dataset.
+
+        Args:
+            method (str): The sampling method ('ns' or 'mcmc').
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+            loc (str): The location of the samples ('hpc' or 'local').
+
+        Returns:
+            DataFrame: The samples loaded via the read_chains function.
+        """
         if loc == "hpc":
             if method == "ns":
                 samples = read_chains(
@@ -102,6 +172,19 @@ class DatabaseCreator(Database):
         return samples
 
     def upload_samples(self, deposit_id, method, model, dataset, loc):
+        """
+        Upload samples from a local or HPC location to a Zenodo deposit.
+
+        Args:
+            deposit_id (int): The ID of the deposit.
+            method (str): The sampling method ('ns' or 'mcmc').
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+            loc (str): The location of the samples ('hpc' or 'local').
+
+        Returns:
+            Response: The requests response object after uploading.
+        """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
         r.raise_for_status()
@@ -120,15 +203,25 @@ class DatabaseCreator(Database):
             )
             r.raise_for_status()
             if r.status_code == 201:
-                print(
-                    f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully"
-                )
+                print(f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully")
             else:
                 print(f"Error uploading {filename} to {deposit_id}:", r.status_code)
         os.remove(f"./{filename}")
         return r
 
     def get_yaml_path(self, method, model, dataset, loc):
+        """
+        Generate the file path for the YAML file based on location, method, model, and dataset.
+
+        Args:
+            method (str): The sampling method.
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+            loc (str): The location identifier ('hpc' or 'local').
+
+        Returns:
+            str: The full path to the YAML file.
+        """
         if loc == "hpc":
             yaml_file_path = f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}.updated.yaml"
         elif loc == "local":
@@ -136,6 +229,19 @@ class DatabaseCreator(Database):
         return yaml_file_path
 
     def upload_yaml(self, deposit_id, method, model, dataset, loc):
+        """
+        Upload a YAML file containing deposit information to a Zenodo deposit.
+
+        Args:
+            deposit_id (int): The ID of the deposit.
+            method (str): The sampling method.
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+            loc (str): The location where the YAML file is stored ('hpc' or 'local').
+
+        Returns:
+            Response: The requests response object after uploading.
+        """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
         r.raise_for_status()
@@ -143,21 +249,30 @@ class DatabaseCreator(Database):
         params = {"access_token": self.ACCESS_TOKEN}
 
         filename = self.get_filename(method, model, dataset, filestype="info")
-
         yaml_file_path = self.get_yaml_path(method, model, dataset, loc)
         with open(yaml_file_path, "rb") as fp:
             r = requests.put(f"{bucket_url}/{filename}", data=fp, params=params)
             r.raise_for_status()
             if r.status_code == 201:
-                print(
-                    f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully"
-                )
+                print(f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully")
             else:
                 print(f"Error uploading {filename} to {deposit_id}:", r.status_code)
 
         return r
 
     def get_prior_info_path(self, method, model, dataset, loc):
+        """
+        Generate the file path for the PRIOR_INFO file based on location, method, model, and dataset.
+
+        Args:
+            method (str): The sampling method.
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+            loc (str): The location identifier ('hpc' or 'local').
+
+        Returns:
+            str: The full path to the PRIOR_INFO file.
+        """
         if loc == "hpc":
             path = f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info"
         elif loc == "local":
@@ -165,6 +280,19 @@ class DatabaseCreator(Database):
         return path
 
     def upload_prior_info(self, deposit_id, method, model, dataset, loc):
+        """
+        Upload the PRIOR_INFO file to a Zenodo deposit.
+
+        Args:
+            deposit_id (int): The ID of the deposit.
+            method (str): The sampling method.
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+            loc (str): The location where the PRIOR_INFO file is stored ('hpc' or 'local').
+
+        Returns:
+            Response: The requests response object after uploading.
+        """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
         r.raise_for_status()
@@ -172,21 +300,28 @@ class DatabaseCreator(Database):
         params = {"access_token": self.ACCESS_TOKEN}
 
         filename = self.get_filename(method, model, dataset, filestype="prior_info")
-
         prior_info_file_path = self.get_prior_info_path(method, model, dataset, loc)
         with open(prior_info_file_path, "rb") as fp:
             r = requests.put(f"{bucket_url}/{filename}", data=fp, params=params)
             r.raise_for_status()
             if r.status_code == 201:
-                print(
-                    f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully"
-                )
+                print(f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully")
             else:
                 print(f"Error uploading {filename} to {deposit_id}:", r.status_code)
 
         return r
 
     def get_deposit_ids_by_title(self, title, size=1000):
+        """
+        Search and retrieve deposit IDs that match a given title from Zenodo.
+
+        Args:
+            title (str): The title to search for.
+            size (int, optional): Maximum number of deposit results to retrieve. Defaults to 1000.
+
+        Returns:
+            dict: A dictionary with two keys 'published' and 'unpublished' containing lists of deposit IDs.
+        """
         deposit_ids = {"published": [], "unpublished": []}
         url = self.base_url
         params = {
@@ -203,10 +338,8 @@ class DatabaseCreator(Database):
                 print(f"Fetching data from URL: {url}")
 
                 # Fetch the data
-                r = requests.get(
-                    url, params=params if url == self.base_url else None
-                )  # Use params only for the first request
-                r.raise_for_status()  # Raise an error if the request fails
+                r = requests.get(url, params=params if url == self.base_url else None)
+                r.raise_for_status()
                 response_data = r.json()
 
                 # Debugging: Log the response structure
@@ -216,9 +349,7 @@ class DatabaseCreator(Database):
                 if isinstance(response_data, dict):
                     for hit in response_data.get("hits", {}).get("hits", []):
                         deposit_id = hit.get("id")
-                        is_published = hit.get(
-                            "submitted", False
-                        )  # Check the "submitted" field
+                        is_published = hit.get("submitted", False)
                         if deposit_id:
                             if is_published:
                                 deposit_ids["published"].append(deposit_id)
@@ -227,15 +358,13 @@ class DatabaseCreator(Database):
 
                     # Follow the next page URL if it exists
                     url = response_data.get("links", {}).get("next")
-                    params = None  # Clear params after the first request since `url` includes them
+                    params = None  # Clear params after the first request
 
                 # Handle list-based responses (if applicable)
                 elif isinstance(response_data, list):
                     for record in response_data:
                         deposit_id = record.get("id")
-                        is_published = record.get(
-                            "submitted", False
-                        )  # Check the "submitted" field
+                        is_published = record.get("submitted", False)
                         if deposit_id:
                             if is_published:
                                 deposit_ids["published"].append(deposit_id)
@@ -260,7 +389,7 @@ class DatabaseCreator(Database):
 
     def delete_unpublished_deposit_by_id(self, deposit_ids):
         """
-        Deletes one or more deposits by their ID(s), but first checks if the deposit exists.
+        Delete one or more unpublished deposits by their ID(s) after checking for their existence.
 
         Args:
             deposit_ids (int or list): A single deposit ID (int) or a list of deposit IDs to delete.
@@ -269,10 +398,8 @@ class DatabaseCreator(Database):
             list: A list of dictionaries, each containing the deposit ID and the status of the operation.
         """
         if isinstance(deposit_ids, int):
-            # Convert single integer deposit ID into a list for uniform processing
             deposit_ids = [deposit_ids]
 
-        # Check if the list is empty
         if not deposit_ids:
             print("No existing deposits match the given description.")
             return []
@@ -281,128 +408,120 @@ class DatabaseCreator(Database):
 
         for deposit_id in deposit_ids:
             try:
-                # Step 1: Check if the deposit exists
+                # Check if the deposit exists
                 check_url = f"{self.base_url}/{deposit_id}"
-                check_response = requests.get(
-                    check_url, params={"access_token": self.ACCESS_TOKEN}
-                )
+                check_response = requests.get(check_url, params={"access_token": self.ACCESS_TOKEN})
 
-                if check_response.status_code == 404:  # Deposit does not exist
+                if check_response.status_code == 404:
                     results.append({"deposit_id": deposit_id, "status": "Not Found"})
                     continue
-                elif (
-                    check_response.status_code != 200
-                ):  # Some other error while checking
-                    results.append(
-                        {
-                            "deposit_id": deposit_id,
-                            "status": f"Check Failed ({check_response.status_code})",
-                        }
-                    )
+                elif check_response.status_code != 200:
+                    results.append({
+                        "deposit_id": deposit_id,
+                        "status": f"Check Failed ({check_response.status_code})",
+                    })
                     continue
 
-                # Step 2: Attempt to delete the deposit if it exists
+                # Attempt to delete the deposit
                 delete_url = f"{self.base_url}/{deposit_id}"
-                delete_response = requests.delete(
-                    delete_url, params={"access_token": self.ACCESS_TOKEN}
-                )
+                delete_response = requests.delete(delete_url, params={"access_token": self.ACCESS_TOKEN})
 
-                # Check if the deletion was successful
-                if (
-                    delete_response.status_code == 204
-                ):  # HTTP 204 means No Content (successful deletion)
+                if delete_response.status_code == 204:
                     results.append({"deposit_id": deposit_id, "status": "Deleted"})
                 else:
-                    results.append(
-                        {
-                            "deposit_id": deposit_id,
-                            "status": f"Delete Failed ({delete_response.status_code})",
-                        }
-                    )
+                    results.append({
+                        "deposit_id": deposit_id,
+                        "status": f"Delete Failed ({delete_response.status_code})",
+                    })
             except requests.exceptions.RequestException as e:
-                print(
-                    f"An error occurred while processing deposit ID {deposit_id}: {e}"
-                )
+                print(f"An error occurred while processing deposit ID {deposit_id}: {e}")
                 results.append({"deposit_id": deposit_id, "status": "Error"})
 
         return results
 
     def get_metadata(self, deposit_id):
+        """
+        Retrieve metadata for a given deposit.
+
+        Args:
+            deposit_id (int): The ID of the deposit.
+
+        Returns:
+            dict or None: The metadata dictionary if successful, otherwise None.
+        """
         metadata_url = f"{self.base_url}/{deposit_id}"
         try:
-            response = requests.get(
-                metadata_url, params={"access_token": self.ACCESS_TOKEN}
-            )
+            response = requests.get(metadata_url, params={"access_token": self.ACCESS_TOKEN})
             response.raise_for_status()
             deposit_data = response.json()
             return deposit_data.get("metadata", {})
         except requests.exceptions.HTTPError as http_err:
-            print(
-                f"Failed to fetch metadata for deposit ID {deposit_id}. Error: {http_err}"
-            )
+            print(f"Failed to fetch metadata for deposit ID {deposit_id}. Error: {http_err}")
             return None
 
     def publish(self, deposit_id, metadata):
+        """
+        Publish a deposit on Zenodo with the provided metadata.
+
+        Args:
+            deposit_id (int): The ID of the deposit.
+            metadata (dict): The metadata for the deposit.
+
+        Returns:
+            None
+        """
         publish_url = f"{self.base_url}/{deposit_id}/actions/publish"
 
         try:
-            response = requests.post(
-                publish_url, params={"access_token": self.ACCESS_TOKEN}, json=metadata
-            )
+            response = requests.post(publish_url, params={"access_token": self.ACCESS_TOKEN}, json=metadata)
             response.raise_for_status()
 
             result = response.json()
             title = metadata.get("title", "Unknown Title")
             concept_doi = result.get("conceptdoi", "N/A")
 
-            print(
-                f"{title} (Deposit ID: {deposit_id}) is published successfully. Concept DOI: {concept_doi}"
-            )
-            # return result
+            print(f"{title} (Deposit ID: {deposit_id}) is published successfully. Concept DOI: {concept_doi}")
 
         except requests.exceptions.HTTPError as http_err:
             error_code = response.status_code if "response" in locals() else "N/A"
             title = metadata.get("title", "Unknown Title")
-            print(
-                f"{title} (Deposit ID: {deposit_id}) publishing failed. Error code: {error_code}"
-            )
+            print(f"{title} (Deposit ID: {deposit_id}) publishing failed. Error code: {error_code}")
             print(f"Error details: {http_err}")
         except Exception as err:
             print(f"An unexpected error occurred: {err}")
 
     def newversion(self, deposit_id):
         """
-        Used to create a new version of an already published Zenodo deposit.
+        Create a new version of an already published Zenodo deposit.
+
+        Args:
+            deposit_id (int): The ID of the published deposit.
+
+        Returns:
+            int or None: The draft deposit ID of the new version if successful; otherwise, None.
         """
         try:
-            # Step 1: Retrieve deposit information
-            deposit_url = (
-                f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
-            )
+            # Retrieve deposit information
+            deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
             r = requests.get(deposit_url)
             r.raise_for_status()
             deposit_data = r.json()
 
-            if deposit_data.get("state") == "done":  # Ensure it's published
+            if deposit_data.get("state") == "done":
                 print("Deposit is published. Proceeding to create a new version.")
 
-                # Step 2: Create a new version
+                # Create a new version
                 new_version_response = requests.post(
                     f"{self.base_url}/{deposit_id}/actions/newversion",
                     params={"access_token": self.ACCESS_TOKEN},
                 )
-
                 new_version_response.raise_for_status()
                 new_version_data = new_version_response.json()
 
-                print(
-                    f"New draft version created. Draft deposit ID: {new_version_data['id']}"
-                )
+                print(f"New draft version created. Draft deposit ID: {new_version_data['id']}")
                 return new_version_data["id"]
             else:
-                print(
-                    "The deposit is not yet published or cannot be unlocked directly."
-                )
+                print("The deposit is not yet published or cannot be unlocked directly.")
                 return None
 
         except requests.exceptions.RequestException as e:
@@ -410,9 +529,16 @@ class DatabaseCreator(Database):
             return None
 
     def get_concept_doi(self, deposit_id):
-        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+        """
+        Retrieve the concept DOI for a published deposit.
 
-        # Fetch deposit details
+        Args:
+            deposit_id (int): The ID of the deposit.
+
+        Returns:
+            str or None: The concept DOI if available; otherwise, None.
+        """
+        deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         response = requests.get(deposit_url)
         response.raise_for_status()
 
@@ -428,7 +554,19 @@ class DatabaseCreator(Database):
 
 
 class DatabaseExplorer(Database):
+    """
+    A class for exploring and downloading deposits from Zenodo. Inherits from Database to utilize filename generation.
+    """
+
     def __init__(self, sandbox=False, base_url=None, records_url=None):
+        """
+        Initialize the DatabaseExplorer instance.
+
+        Args:
+            sandbox (bool, optional): Whether to use the Zenodo sandbox environment. Defaults to False.
+            base_url (str, optional): The base URL for deposit endpoints.
+            records_url (str, optional): The URL for records endpoints.
+        """
         self.sandbox = sandbox
         if sandbox == True:
             self.base_url = "https://sandbox.zenodo.org/api/deposit/depositions"
@@ -438,6 +576,17 @@ class DatabaseExplorer(Database):
             self.records_url = "https://zenodo.org/api/records"
 
     def download(self, deposit_id, filename):
+        """
+        Download a specific file from a deposit.
+
+        Args:
+            deposit_id (int): The ID of the deposit.
+            filename (str): The filename to download.
+
+        Returns:
+            DataFrame, dict, or None: The downloaded data depending on the file type;
+                                      a DataFrame for CSV, a dict for YAML, or processed data for PRIOR_INFO.
+        """
         deposit_url = f"{self.records_url}/{deposit_id}"
         r = requests.get(deposit_url)
         r.raise_for_status()
@@ -447,82 +596,107 @@ class DatabaseExplorer(Database):
             files = deposit_info["files"]
 
             for file in files:
-                if file["key"] == filename:  # Check for your specific file
-                    download_url = file["links"]["self"]  # Direct download link
+                if file["key"] == filename:
+                    download_url = file["links"]["self"]
                     print("Download url:", download_url)
 
                     file_r = requests.get(download_url)
                     file_r.raise_for_status()
 
                     if file_r.status_code == 200:
-                        # Handle CSV files
                         if filename.endswith(".csv"):
                             data = pd.read_csv(BytesIO(file_r.content))
                             print(f"{filename} CSV file loaded successfully.")
-                        # Handle YAML files
                         elif filename.endswith((".yaml", ".yml")):
                             data = yaml.safe_load(file_r.content.decode("utf-8"))
                             print(f"{filename} YAML file loaded successfully.")
-                        # Handle PRIOR_INFO files
                         elif filename.endswith(".prior_info"):
                             try:
-                                # Decode the content and strip any leading/trailing whitespace
                                 raw_data = file_r.content.decode("utf-8-sig").strip()
-
                                 if raw_data:
-                                    # Parse the content into key-value pairs
                                     data = {}
                                     for line in raw_data.splitlines():
                                         key, value = line.split("=")
                                         data[key.strip()] = int(value.strip())
-
-                                    print(
-                                        f"{filename} PRIOR_INFO file loaded successfully."
-                                    )
+                                    print(f"{filename} PRIOR_INFO file loaded successfully.")
                                 else:
-                                    print(
-                                        f"Warning: {filename} PRIOR_INFO file is empty."
-                                    )
+                                    print(f"Warning: {filename} PRIOR_INFO file is empty.")
+                                    data = {}
                             except (UnicodeDecodeError, ValueError) as e:
                                 print(f"Error processing {filename}: {e}")
+                                data = None
                         else:
                             print(f"Unsupported file type: {filename}")
                             data = None
-
                     else:
                         print(f"Error downloading {filename}:", file_r.status_code)
-            return data
+                        data = None
+                    return data
         else:
             print("Error retrieving deposit metadata:", r.status_code, r.json())
 
     def download_samples(self, method, model, dataset):
+        """
+        Download sample data for a given method, model, and dataset.
+
+        Args:
+            method (str): The sampling method.
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+
+        Returns:
+            DataFrame or None: The downloaded sample data.
+        """
         filename = self.get_filename(method, model, dataset, "samples")
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
     def download_info(self, method, model, dataset):
+        """
+        Download the YAML info file for a given method, model, and dataset.
+
+        Args:
+            method (str): The sampling method.
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+
+        Returns:
+            dict or None: The contents of the YAML file.
+        """
         filename = self.get_filename(method, model, dataset, "info")
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
     def download_prior_info(self, method, model, dataset):
+        """
+        Download the PRIOR_INFO file for a given method, model, and dataset.
+
+        Args:
+            method (str): The sampling method.
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+
+        Returns:
+            dict or None: The processed PRIOR_INFO data.
+        """
         filename = self.get_filename(method, model, dataset, "prior_info")
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
     def get_deposit_id_by_title_users(self, model, dataset):
         """
-        Search for a single deposit by title without an access token.
+        Search for a single deposit by title without requiring an access token.
 
         Args:
-            title (str): The title to search for.
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
 
         Returns:
-            str: The deposit ID of the first matching result, or None if not found.
+            str or None: The deposit ID of the first matching result, or None if not found.
         """
         params = {
             "q": f'title:"unimpeded: {model} {dataset}"',
-            "size": 1,  # Limit results to 1 for simplicity
+            "size": 1,
         }
 
         try:
@@ -530,7 +704,6 @@ class DatabaseExplorer(Database):
             response.raise_for_status()
             data = response.json()
 
-            # Extract deposit ID if available
             hits = data.get("hits", {}).get("hits", [])
             if hits:
                 return hits[0].get("id")
