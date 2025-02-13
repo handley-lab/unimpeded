@@ -1,6 +1,7 @@
 import datetime
 import os
 from io import BytesIO
+
 import pandas as pd
 import requests
 import yaml
@@ -22,38 +23,50 @@ class Database:
             base_url (str, optional): The base URL for deposit endpoints.
             records_url (str, optional): The URL for records endpoints.
         """
-        self.models = ['klcdm','wlcdm', 'rlcdm', 'nrunlcdm', 'mlcdm', 'lcdm', 'walcdm','Nlcdm', 'nlcdm']
+        self.models = [
+            "klcdm",
+            "wlcdm",
+            "rlcdm",
+            "nrunlcdm",
+            "mlcdm",
+            "lcdm",
+            "walcdm",
+            "Nlcdm",
+            "nlcdm",
+        ]
 
-        self.datasets = ['bao.sdss_dr16',
-                        'bicep_keck_2018',
-                        'des_y1.joint',
-                        'sn.pantheon',
-                        'planck_2018_CamSpec',
-                        'planck_2018_CamSpec_nolens',
-                        'planck_2018_plik',
-                        'planck_2018_plik_nolens',
-                        'bao.sdss_dr16+bicep_keck_2018',
-                        'bao.sdss_dr16+des_y1.joint',
-                        'bao.sdss_dr16+sn.pantheon',
-                        'bicep_keck_2018+des_y1.joint',
-                        'bicep_keck_2018+sn.pantheon',
-                        'des_y1.joint+sn.pantheon',
-                        'bao.sdss_dr16+planck_2018_CamSpec',
-                        'bao.sdss_dr16+planck_2018_CamSpec_nolens',
-                        'bao.sdss_dr16+planck_2018_plik',
-                        'bao.sdss_dr16+planck_2018_plik_nolens',
-                        'bicep_keck_2018+planck_2018_CamSpec',
-                        'bicep_keck_2018+planck_2018_CamSpec_nolens',
-                        'bicep_keck_2018+planck_2018_plik',
-                        'bicep_keck_2018+planck_2018_plik_nolens',
-                        'des_y1.joint+planck_2018_CamSpec',
-                        'des_y1.joint+planck_2018_CamSpec_nolens',
-                        'des_y1.joint+planck_2018_plik',
-                        'des_y1.joint+planck_2018_plik_nolens',
-                        'planck_2018_CamSpec+sn.pantheon',
-                        'planck_2018_CamSpec_nolens+sn.pantheon',
-                        'planck_2018_plik+sn.pantheon',
-                        'planck_2018_plik_nolens+sn.pantheon']       
+        self.datasets = [
+            "bao.sdss_dr16",
+            "bicep_keck_2018",
+            "des_y1.joint",
+            "sn.pantheon",
+            "planck_2018_CamSpec",
+            "planck_2018_CamSpec_nolens",
+            "planck_2018_plik",
+            "planck_2018_plik_nolens",
+            "bao.sdss_dr16+bicep_keck_2018",
+            "bao.sdss_dr16+des_y1.joint",
+            "bao.sdss_dr16+sn.pantheon",
+            "bicep_keck_2018+des_y1.joint",
+            "bicep_keck_2018+sn.pantheon",
+            "des_y1.joint+sn.pantheon",
+            "bao.sdss_dr16+planck_2018_CamSpec",
+            "bao.sdss_dr16+planck_2018_CamSpec_nolens",
+            "bao.sdss_dr16+planck_2018_plik",
+            "bao.sdss_dr16+planck_2018_plik_nolens",
+            "bicep_keck_2018+planck_2018_CamSpec",
+            "bicep_keck_2018+planck_2018_CamSpec_nolens",
+            "bicep_keck_2018+planck_2018_plik",
+            "bicep_keck_2018+planck_2018_plik_nolens",
+            "des_y1.joint+planck_2018_CamSpec",
+            "des_y1.joint+planck_2018_CamSpec_nolens",
+            "des_y1.joint+planck_2018_plik",
+            "des_y1.joint+planck_2018_plik_nolens",
+            "planck_2018_CamSpec+sn.pantheon",
+            "planck_2018_CamSpec_nolens+sn.pantheon",
+            "planck_2018_plik+sn.pantheon",
+            "planck_2018_plik_nolens+sn.pantheon",
+        ]
 
     def get_filename(self, method, model, dataset, filestype):
         """
@@ -89,7 +102,9 @@ class DatabaseCreator(Database):
     A class for creating and managing deposits on Zenodo. Inherits from Database to utilise filename generation. ACCESS_TOEKN is required for authentication and is intended to be used only by the authors of unimpeded.
     """
 
-    def __init__(self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None):
+    def __init__(
+        self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None
+    ):
         """
         Initialise the DatabaseCreator instance.
 
@@ -116,7 +131,9 @@ class DatabaseCreator(Database):
         Returns:
             int: The deposit_id of the new deposit on Zenodo.
         """
-        r = requests.post(self.base_url, params={"access_token": self.ACCESS_TOKEN}, json={})
+        r = requests.post(
+            self.base_url, params={"access_token": self.ACCESS_TOKEN}, json={}
+        )
         r.raise_for_status()
         deposit_id = r.json()["id"]
         return deposit_id
@@ -159,7 +176,7 @@ class DatabaseCreator(Database):
                     {
                         "start": today,  # Custom date in YYYY-MM-DD format
                         "type": "Created",  # Type of date (e.g., Collected, Valid, etc.)
-                    } 
+                    }
                 ],
             }
         }
@@ -247,7 +264,9 @@ class DatabaseCreator(Database):
             )
             r.raise_for_status()
             if r.status_code == 201:
-                print(f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully")
+                print(
+                    f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully"
+                )
             else:
                 print(f"Error uploading {filename} to {deposit_id}:", r.status_code)
         os.remove(f"./{filename}")
@@ -298,7 +317,9 @@ class DatabaseCreator(Database):
             r = requests.put(f"{bucket_url}/{filename}", data=fp, params=params)
             r.raise_for_status()
             if r.status_code == 201:
-                print(f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully")
+                print(
+                    f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully"
+                )
             else:
                 print(f"Error uploading {filename} to {deposit_id}:", r.status_code)
 
@@ -349,7 +370,9 @@ class DatabaseCreator(Database):
             r = requests.put(f"{bucket_url}/{filename}", data=fp, params=params)
             r.raise_for_status()
             if r.status_code == 201:
-                print(f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully")
+                print(
+                    f"Uploaded {filename} to Zenodo deposit {deposit_id} successfully"
+                )
             else:
                 print(f"Error uploading {filename} to {deposit_id}:", r.status_code)
 
@@ -451,31 +474,41 @@ class DatabaseCreator(Database):
             try:
                 # Check if the deposit exists
                 check_url = f"{self.base_url}/{deposit_id}"
-                check_response = requests.get(check_url, params={"access_token": self.ACCESS_TOKEN})
+                check_response = requests.get(
+                    check_url, params={"access_token": self.ACCESS_TOKEN}
+                )
 
                 if check_response.status_code == 404:
                     results.append({"deposit_id": deposit_id, "status": "Not Found"})
                     continue
                 elif check_response.status_code != 200:
-                    results.append({
-                        "deposit_id": deposit_id,
-                        "status": f"Check Failed ({check_response.status_code})",
-                    })
+                    results.append(
+                        {
+                            "deposit_id": deposit_id,
+                            "status": f"Check Failed ({check_response.status_code})",
+                        }
+                    )
                     continue
 
                 # Attempt to delete the deposit
                 delete_url = f"{self.base_url}/{deposit_id}"
-                delete_response = requests.delete(delete_url, params={"access_token": self.ACCESS_TOKEN})
+                delete_response = requests.delete(
+                    delete_url, params={"access_token": self.ACCESS_TOKEN}
+                )
 
                 if delete_response.status_code == 204:
                     results.append({"deposit_id": deposit_id, "status": "Deleted"})
                 else:
-                    results.append({
-                        "deposit_id": deposit_id,
-                        "status": f"Delete Failed ({delete_response.status_code})",
-                    })
+                    results.append(
+                        {
+                            "deposit_id": deposit_id,
+                            "status": f"Delete Failed ({delete_response.status_code})",
+                        }
+                    )
             except requests.exceptions.RequestException as e:
-                print(f"An error occurred while processing deposit ID {deposit_id}: {e}")
+                print(
+                    f"An error occurred while processing deposit ID {deposit_id}: {e}"
+                )
                 results.append({"deposit_id": deposit_id, "status": "Error"})
 
         return results
@@ -492,12 +525,16 @@ class DatabaseCreator(Database):
         """
         metadata_url = f"{self.base_url}/{deposit_id}"
         try:
-            response = requests.get(metadata_url, params={"access_token": self.ACCESS_TOKEN})
+            response = requests.get(
+                metadata_url, params={"access_token": self.ACCESS_TOKEN}
+            )
             response.raise_for_status()
             deposit_data = response.json()
             return deposit_data.get("metadata", {})
         except requests.exceptions.HTTPError as http_err:
-            print(f"Failed to fetch metadata for deposit ID {deposit_id}. Error: {http_err}")
+            print(
+                f"Failed to fetch metadata for deposit ID {deposit_id}. Error: {http_err}"
+            )
             return None
 
     def publish(self, deposit_id, metadata):
@@ -514,19 +551,25 @@ class DatabaseCreator(Database):
         publish_url = f"{self.base_url}/{deposit_id}/actions/publish"
 
         try:
-            response = requests.post(publish_url, params={"access_token": self.ACCESS_TOKEN}, json=metadata)
+            response = requests.post(
+                publish_url, params={"access_token": self.ACCESS_TOKEN}, json=metadata
+            )
             response.raise_for_status()
 
             result = response.json()
             title = metadata.get("title", "Unknown Title")
             concept_doi = result.get("conceptdoi", "N/A")
 
-            print(f"{title} (Deposit ID: {deposit_id}) is published successfully. Concept DOI: {concept_doi}")
+            print(
+                f"{title} (Deposit ID: {deposit_id}) is published successfully. Concept DOI: {concept_doi}"
+            )
 
         except requests.exceptions.HTTPError as http_err:
             error_code = response.status_code if "response" in locals() else "N/A"
             title = metadata.get("title", "Unknown Title")
-            print(f"{title} (Deposit ID: {deposit_id}) publishing failed. Error code: {error_code}")
+            print(
+                f"{title} (Deposit ID: {deposit_id}) publishing failed. Error code: {error_code}"
+            )
             print(f"Error details: {http_err}")
         except Exception as err:
             print(f"An unexpected error occurred: {err}")
@@ -543,7 +586,9 @@ class DatabaseCreator(Database):
         """
         try:
             # Retrieve deposit information
-            deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+            deposit_url = (
+                f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
+            )
             r = requests.get(deposit_url)
             r.raise_for_status()
             deposit_data = r.json()
@@ -562,7 +607,9 @@ class DatabaseCreator(Database):
                 print(f"New version created. New deposit ID: {new_version_data['id']}")
                 return new_version_data["id"]
             else:
-                print("The deposit is not yet published or cannot be unlocked directly.")
+                print(
+                    "The deposit is not yet published or cannot be unlocked directly."
+                )
                 return None
 
         except requests.exceptions.RequestException as e:
@@ -640,7 +687,7 @@ class DatabaseExplorer(Database):
             for file in files:
                 if file["key"] == filename:
                     download_url = file["links"]["self"]
-                    #print("Download url:", download_url)
+                    # print("Download url:", download_url)
 
                     file_r = requests.get(download_url)
                     file_r.raise_for_status()
@@ -662,7 +709,9 @@ class DatabaseExplorer(Database):
                                         data[key.strip()] = int(value.strip())
                                     print(f"{filename} file loaded successfully.")
                                 else:
-                                    print(f"Warning: {filename} PRIOR_INFO file is empty.")
+                                    print(
+                                        f"Warning: {filename} PRIOR_INFO file is empty."
+                                    )
                                     data = {}
                             except (UnicodeDecodeError, ValueError) as e:
                                 print(f"Error processing {filename}: {e}")
