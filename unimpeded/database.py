@@ -1,7 +1,6 @@
 import datetime
 import os
 from io import BytesIO
-
 import pandas as pd
 import requests
 import yaml
@@ -758,14 +757,14 @@ class DatabaseExplorer(Database):
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
-    def download_prior_info(self, method, model, dataset):
+    def download_prior_info(self, model, dataset, method="ns"):
         """
         Download the PRIOR_INFO file for a given method, model, and dataset.
 
         Args:
-            method (str): The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-Hastings).
             model (str): The cosmological model name.
             dataset (str): The dataset name.
+            method (str): 'ns' for Nested Sampling by default.
 
         Returns:
             dict or None: A dictionary containing the value of 'nprior' and 'ndiscarded'.
