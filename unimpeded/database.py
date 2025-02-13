@@ -12,6 +12,49 @@ class Database:
     Base class providing utility methods for generating file names for different file types. This class in inherited by class DatabaseCreator and DatabaseExplorer.
     """
 
+    def __init__(self):
+        """
+        Initialise the Database instance.
+
+        Args:
+            sandbox (bool, optional): Whether to use the Zenodo sandbox environment. Defaults to True.
+            ACCESS_TOKEN (str, optional): The access token for authentication.
+            base_url (str, optional): The base URL for deposit endpoints.
+            records_url (str, optional): The URL for records endpoints.
+        """
+        self.models = ['klcdm','wlcdm', 'rlcdm', 'nrunlcdm', 'mlcdm', 'lcdm', 'walcdm','Nlcdm', 'nlcdm']
+
+        self.datasets = ['bao.sdss_dr16',
+                        'bicep_keck_2018',
+                        'des_y1.joint',
+                        'sn.pantheon',
+                        'planck_2018_CamSpec',
+                        'planck_2018_CamSpec_nolens',
+                        'planck_2018_plik',
+                        'planck_2018_plik_nolens',
+                        'bao.sdss_dr16+bicep_keck_2018',
+                        'bao.sdss_dr16+des_y1.joint',
+                        'bao.sdss_dr16+sn.pantheon',
+                        'bicep_keck_2018+des_y1.joint',
+                        'bicep_keck_2018+sn.pantheon',
+                        'des_y1.joint+sn.pantheon',
+                        'bao.sdss_dr16+planck_2018_CamSpec',
+                        'bao.sdss_dr16+planck_2018_CamSpec_nolens',
+                        'bao.sdss_dr16+planck_2018_plik',
+                        'bao.sdss_dr16+planck_2018_plik_nolens',
+                        'bicep_keck_2018+planck_2018_CamSpec',
+                        'bicep_keck_2018+planck_2018_CamSpec_nolens',
+                        'bicep_keck_2018+planck_2018_plik',
+                        'bicep_keck_2018+planck_2018_plik_nolens',
+                        'des_y1.joint+planck_2018_CamSpec',
+                        'des_y1.joint+planck_2018_CamSpec_nolens',
+                        'des_y1.joint+planck_2018_plik',
+                        'des_y1.joint+planck_2018_plik_nolens',
+                        'planck_2018_CamSpec+sn.pantheon',
+                        'planck_2018_CamSpec_nolens+sn.pantheon',
+                        'planck_2018_plik+sn.pantheon',
+                        'planck_2018_plik_nolens+sn.pantheon']       
+
     def get_filename(self, method, model, dataset, filestype):
         """
         Generate a filename based on the provided method, model, dataset, and file type.
@@ -64,6 +107,7 @@ class DatabaseCreator(Database):
         elif sandbox == False:
             self.base_url = "https://zenodo.org/api/deposit/depositions"
             self.records_url = "https://zenodo.org/api/records"
+        super().__init__()
 
     def create_deposit(self):
         """
@@ -571,6 +615,7 @@ class DatabaseExplorer(Database):
         elif sandbox == False:
             self.base_url = "https://zenodo.org/api/deposit/depositions"
             self.records_url = "https://zenodo.org/api/records"
+        super().__init__()
 
     def download(self, deposit_id, filename):
         """
@@ -595,7 +640,7 @@ class DatabaseExplorer(Database):
             for file in files:
                 if file["key"] == filename:
                     download_url = file["links"]["self"]
-                    print("Download url:", download_url)
+                    #print("Download url:", download_url)
 
                     file_r = requests.get(download_url)
                     file_r.raise_for_status()
@@ -603,10 +648,10 @@ class DatabaseExplorer(Database):
                     if file_r.status_code == 200:
                         if filename.endswith(".csv"):
                             data = pd.read_csv(BytesIO(file_r.content))
-                            print(f"{filename} CSV file loaded successfully.")
+                            print(f"{filename} file loaded successfully.")
                         elif filename.endswith((".yaml", ".yml")):
                             data = yaml.safe_load(file_r.content.decode("utf-8"))
-                            print(f"{filename} YAML file loaded successfully.")
+                            print(f"{filename} file loaded successfully.")
                         elif filename.endswith(".prior_info"):
                             try:
                                 raw_data = file_r.content.decode("utf-8-sig").strip()
@@ -615,7 +660,7 @@ class DatabaseExplorer(Database):
                                     for line in raw_data.splitlines():
                                         key, value = line.split("=")
                                         data[key.strip()] = int(value.strip())
-                                    print(f"{filename} PRIOR_INFO file loaded successfully.")
+                                    print(f"{filename} file loaded successfully.")
                                 else:
                                     print(f"Warning: {filename} PRIOR_INFO file is empty.")
                                     data = {}
