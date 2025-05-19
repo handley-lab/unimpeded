@@ -4,7 +4,7 @@ from io import BytesIO
 import pandas as pd
 import requests
 import yaml
-from anesthetic import read_chains
+from anesthetic import read_chains, read_csv
 
 
 class Database:
@@ -693,7 +693,7 @@ class DatabaseExplorer(Database):
 
                     if file_r.status_code == 200:
                         if filename.endswith(".csv"):
-                            data = pd.read_csv(BytesIO(file_r.content))
+                            data = read_csv(BytesIO(file_r.content))
                             print(f"{filename} file loaded successfully.")
                         elif filename.endswith((".yaml", ".yml")):
                             data = yaml.safe_load(file_r.content.decode("utf-8"))
