@@ -1,5 +1,5 @@
-from anesthetic import read_chains
 import matplotlib.pyplot as plt
+from anesthetic import read_chains
 
 samples = read_chains(
     "data/grid/lcdm/planck_2018_plik/planck_2018_plik_polychord_raw/planck_2018_plik"

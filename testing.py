@@ -1,5 +1,6 @@
-import requests
 import os
+
+import requests
 
 r = requests.get("https://zenodo.org/api/deposit/depositions")
 r.status_code
