@@ -13,60 +13,77 @@ class Database:
     Base class providing utility methods for generating file names for different file types. This class in inherited by class DatabaseCreator and DatabaseExplorer.
     """
 
-    def __init__(self):
+    def __init__(self, sandbox=False):
         """
-        Initialise the Database instance.
+        Initialise the Database instance and fetch available models and datasets from Zenodo.
 
         Args:
-            sandbox (bool, optional): Whether to use the Zenodo sandbox environment. Defaults to True.
-            ACCESS_TOKEN (str, optional): The access token for authentication.
-            base_url (str, optional): The base URL for deposit endpoints.
-            records_url (str, optional): The URL for records endpoints.
+            sandbox (bool, optional): Whether to use the Zenodo sandbox environment. Defaults to False.
         """
-        self.models = [
-            "klcdm",
-            "wlcdm",
-            "rlcdm",
-            "nrunlcdm",
-            "mlcdm",
-            "lcdm",
-            "walcdm",
-            "Nlcdm",
-            "nlcdm",
-        ]
+        self.sandbox = sandbox
+        if sandbox:
+            self.records_url = "https://sandbox.zenodo.org/api/records"
+        else:
+            self.records_url = "https://zenodo.org/api/records"
 
-        self.datasets = [
-            "bao.sdss_dr16",
-            "bicep_keck_2018",
-            "des_y1.joint",
-            "sn.pantheon",
-            "planck_2018_CamSpec",
-            "planck_2018_CamSpec_nolens",
-            "planck_2018_plik",
-            "planck_2018_plik_nolens",
-            "bao.sdss_dr16+bicep_keck_2018",
-            "bao.sdss_dr16+des_y1.joint",
-            "bao.sdss_dr16+sn.pantheon",
-            "bicep_keck_2018+des_y1.joint",
-            "bicep_keck_2018+sn.pantheon",
-            "des_y1.joint+sn.pantheon",
-            "bao.sdss_dr16+planck_2018_CamSpec",
-            "bao.sdss_dr16+planck_2018_CamSpec_nolens",
-            "bao.sdss_dr16+planck_2018_plik",
-            "bao.sdss_dr16+planck_2018_plik_nolens",
-            "bicep_keck_2018+planck_2018_CamSpec",
-            "bicep_keck_2018+planck_2018_CamSpec_nolens",
-            "bicep_keck_2018+planck_2018_plik",
-            "bicep_keck_2018+planck_2018_plik_nolens",
-            "des_y1.joint+planck_2018_CamSpec",
-            "des_y1.joint+planck_2018_CamSpec_nolens",
-            "des_y1.joint+planck_2018_plik",
-            "des_y1.joint+planck_2018_plik_nolens",
-            "planck_2018_CamSpec+sn.pantheon",
-            "planck_2018_CamSpec_nolens+sn.pantheon",
-            "planck_2018_plik+sn.pantheon",
-            "planck_2018_plik_nolens+sn.pantheon",
-        ]
+        # Fetch available models and datasets from Zenodo
+        available = self.get_available_models_and_datasets()
+        self.models = available["models"]
+        self.datasets = available["datasets"]
+
+    def get_available_models_and_datasets(self):
+        """
+        Search all unimpeded deposits on Zenodo and extract unique models and datasets.
+
+        Returns:
+            dict: A dictionary with two keys:
+                - 'models': A sorted list of unique model names.
+                - 'datasets': A sorted list of unique dataset names.
+        """
+        models = set()
+        datasets = set()
+        page = 1
+        size = 1000  # Maximum results per page
+
+        try:
+            while True:
+                params = {
+                    "q": 'title:"unimpeded:"',
+                    "size": size,
+                    "page": page,
+                }
+
+                response = requests.get(self.records_url, params=params)
+                response.raise_for_status()
+                data = response.json()
+
+                hits = data.get("hits", {}).get("hits", [])
+                if not hits:
+                    break
+
+                for hit in hits:
+                    title = hit.get("metadata", {}).get("title", "")
+                    # Expected format: "unimpeded: model dataset"
+                    if title.startswith("unimpeded: "):
+                        parts = title.replace("unimpeded: ", "").strip().split(maxsplit=1)
+                        if len(parts) == 2:
+                            model, dataset = parts
+                            models.add(model)
+                            datasets.add(dataset)
+
+                # Check if there are more pages
+                total = data.get("hits", {}).get("total", 0)
+                if page * size >= total:
+                    break
+                page += 1
+
+        except requests.RequestException as e:
+            print(f"Error fetching deposits: {e}")
+
+        return {
+            "models": sorted(list(models)),
+            "datasets": sorted(list(datasets))
+        }
 
     def get_filename(self, method, model, dataset, filestype):
         """
@@ -114,15 +131,12 @@ class DatabaseCreator(Database):
             base_url (str, optional): The base URL for deposit endpoints.
             records_url (str, optional): The URL for records endpoints.
         """
-        self.sandbox = sandbox
         self.ACCESS_TOKEN = ACCESS_TOKEN
         if sandbox == True:
             self.base_url = "https://sandbox.zenodo.org/api/deposit/depositions"
-            self.records_url = "https://sandbox.zenodo.org/api/records"
         elif sandbox == False:
             self.base_url = "https://zenodo.org/api/deposit/depositions"
-            self.records_url = "https://zenodo.org/api/records"
-        super().__init__()
+        super().__init__(sandbox)
 
     def create_deposit(self):
         """
@@ -655,14 +669,11 @@ class DatabaseExplorer(Database):
             base_url (str, optional): The base URL for deposit endpoints.
             records_url (str, optional): The URL for records endpoints.
         """
-        self.sandbox = sandbox
         if sandbox == True:
             self.base_url = "https://sandbox.zenodo.org/api/deposit/depositions"
-            self.records_url = "https://sandbox.zenodo.org/api/records"
         elif sandbox == False:
             self.base_url = "https://zenodo.org/api/deposit/depositions"
-            self.records_url = "https://zenodo.org/api/records"
-        super().__init__()
+        super().__init__(sandbox)
 
     def download(self, deposit_id, filename):
         """

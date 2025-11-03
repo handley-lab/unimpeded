@@ -42,6 +42,63 @@ class TestDatabase:
         ]
         assert all(data in db.datasets for data in expected_data)
 
+    @pytest.mark.vcr
+    def test_get_available_models_and_datasets(self):
+        """Test fetching available models and datasets from Zenodo."""
+        db = Database(sandbox=False)
+        available = db.get_available_models_and_datasets()
+
+        # Check structure
+        assert "models" in available
+        assert "datasets" in available
+        assert isinstance(available["models"], list)
+        assert isinstance(available["datasets"], list)
+
+        # Check that lists are sorted
+        assert available["models"] == sorted(available["models"])
+        assert available["datasets"] == sorted(available["datasets"])
+
+        # Check that common models/datasets exist (if any deposits are published)
+        if available["models"]:
+            # Models should be strings
+            assert all(isinstance(model, str) for model in available["models"])
+
+        if available["datasets"]:
+            # Datasets should be strings
+            assert all(isinstance(dataset, str) for dataset in available["datasets"])
+
+    def test_get_available_models_and_datasets_empty(self):
+        """Test handling when no unimpeded deposits exist."""
+        with patch('requests.get') as mock_get:
+            # Mock empty response
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "hits": {"hits": [], "total": 0}
+            }
+            mock_response.raise_for_status.return_value = None
+            mock_get.return_value = mock_response
+
+            db = Database(sandbox=True)
+            available = db.get_available_models_and_datasets()
+
+            assert available["models"] == []
+            assert available["datasets"] == []
+
+    def test_get_available_models_and_datasets_handles_errors(self):
+        """Test error handling in get_available_models_and_datasets."""
+        import requests
+
+        with patch('requests.get') as mock_get:
+            # Mock request exception
+            mock_get.side_effect = requests.RequestException("Network error")
+
+            db = Database(sandbox=True)
+            available = db.get_available_models_and_datasets()
+
+            # Should return empty lists on error
+            assert available["models"] == []
+            assert available["datasets"] == []
+
     def test_get_filename_samples(self):
         """Test filename generation for samples."""
         db = Database()
