@@ -69,12 +69,10 @@ class TestDatabase:
 
     def test_get_available_models_and_datasets_empty(self):
         """Test handling when no unimpeded deposits exist."""
-        with patch('requests.get') as mock_get:
+        with patch("requests.get") as mock_get:
             # Mock empty response
             mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "hits": {"hits": [], "total": 0}
-            }
+            mock_response.json.return_value = {"hits": {"hits": [], "total": 0}}
             mock_response.raise_for_status.return_value = None
             mock_get.return_value = mock_response
 
@@ -88,7 +86,7 @@ class TestDatabase:
         """Test error handling in get_available_models_and_datasets."""
         import requests
 
-        with patch('requests.get') as mock_get:
+        with patch("requests.get") as mock_get:
             # Mock request exception
             mock_get.side_effect = requests.RequestException("Network error")
 
