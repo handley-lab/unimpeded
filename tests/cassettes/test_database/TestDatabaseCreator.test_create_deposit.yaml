@@ -1,0 +1,26 @@
+interactions:
+- request:
+    body:
+      encoding: utf-8
+      string: '{}'
+    headers:
+      Content-Type:
+      - application/json
+      User-Agent:
+      - python-requests/2.32.3
+    method: POST
+    uri: https://zenodo.org/api/deposit/depositions
+  response:
+    body:
+      encoding: utf-8
+      string: '{"id": 16542097, "created": "2025-07-28T19:14:42.635469Z", "state":
+        "unsubmitted"}'
+    headers:
+      Content-Type:
+      - application/json
+      Server:
+      - nginx
+    status:
+      code: 201
+      message: CREATED
+version: 1
