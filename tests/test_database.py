@@ -88,12 +88,26 @@ class TestDatabase:
             # Mock request exception
             mock_get.side_effect = requests.RequestException("Network error")
 
+            # Capture printed output
+            import io
+            import sys
+
+            captured_output = io.StringIO()
+            sys.stdout = captured_output
+
             db = Database(sandbox=True)
             available = db.get_available_models_and_datasets()
+
+            # Restore stdout
+            sys.stdout = sys.__stdout__
 
             # Should return empty lists on error
             assert available["models"] == []
             assert available["datasets"] == []
+
+            # Verify error was printed
+            output = captured_output.getvalue()
+            assert "Error fetching deposits" in output
 
     @pytest.mark.vcr
     def test_get_filename_samples(self):
