@@ -23,4 +23,36 @@ interactions:
     status:
       code: 201
       message: CREATED
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.24.0
+    method: GET
+    uri: https://zenodo.org/api/records?q=title%3A%22unimpeded%3A%22&size=1000&page=1
+  response:
+    body:
+      string: '<html><body><h1>504 Gateway Time-out</h1>
+
+        The server didn''t respond in time.
+
+        </body></html>
+
+        '
+    headers:
+      cache-control:
+      - no-cache
+      content-length:
+      - '92'
+      content-type:
+      - text/html
+    status:
+      code: 504
+      message: Gateway Time-out
 version: 1
