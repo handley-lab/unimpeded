@@ -13,22 +13,20 @@ from unimpeded.database import Database, DatabaseCreator, DatabaseExplorer
 class TestDatabase:
     """Test the base Database class."""
 
+    @pytest.mark.vcr
     def test_supported_models(self):
-        """Test that supported models list is correct."""
+        """Test that supported models list is correct and sorted."""
         db = Database()
-        expected_models = [
-            "klcdm",
-            "wlcdm",
-            "rlcdm",
-            "nrunlcdm",
-            "mlcdm",
-            "lcdm",
-            "walcdm",
-            "Nlcdm",
-            "nlcdm",
-        ]
-        assert db.models == expected_models
+        # Models are now fetched from Zenodo and sorted alphabetically
+        assert isinstance(db.models, list)
+        assert len(db.models) > 0
+        # Check that the list is sorted
+        assert db.models == sorted(db.models)
+        # Check that common models exist
+        common_models = ["lcdm", "wlcdm", "klcdm"]
+        assert all(model in db.models for model in common_models)
 
+    @pytest.mark.vcr
     def test_supported_data(self):
         """Test that supported datasets list is correct."""
         db = Database()
@@ -69,12 +67,10 @@ class TestDatabase:
 
     def test_get_available_models_and_datasets_empty(self):
         """Test handling when no unimpeded deposits exist."""
-        with patch('requests.get') as mock_get:
+        with patch("requests.get") as mock_get:
             # Mock empty response
             mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "hits": {"hits": [], "total": 0}
-            }
+            mock_response.json.return_value = {"hits": {"hits": [], "total": 0}}
             mock_response.raise_for_status.return_value = None
             mock_get.return_value = mock_response
 
@@ -88,41 +84,60 @@ class TestDatabase:
         """Test error handling in get_available_models_and_datasets."""
         import requests
 
-        with patch('requests.get') as mock_get:
+        with patch("requests.get") as mock_get:
             # Mock request exception
             mock_get.side_effect = requests.RequestException("Network error")
 
+            # Capture printed output
+            import io
+            import sys
+
+            captured_output = io.StringIO()
+            sys.stdout = captured_output
+
             db = Database(sandbox=True)
             available = db.get_available_models_and_datasets()
+
+            # Restore stdout
+            sys.stdout = sys.__stdout__
 
             # Should return empty lists on error
             assert available["models"] == []
             assert available["datasets"] == []
 
+            # Verify error was printed
+            output = captured_output.getvalue()
+            assert "Error fetching deposits" in output
+
+    @pytest.mark.vcr
     def test_get_filename_samples(self):
         """Test filename generation for samples."""
         db = Database()
         filename = db.get_filename("ns", "lcdm", "planck_2018_plik", "samples")
         assert filename == "ns_lcdm_planck_2018_plik.csv"
 
+    @pytest.mark.vcr
     def test_get_filename_info(self):
         """Test filename generation for info files."""
         db = Database()
         filename = db.get_filename("mcmc", "wlcdm", "bao.sdss_dr16", "info")
         assert filename == "mcmc_wlcdm_bao.sdss_dr16.yaml"
 
+    @pytest.mark.vcr
     def test_get_filename_prior_info(self):
         """Test filename generation for prior_info files."""
         db = Database()
         filename = db.get_filename("ns", "klcdm", "planck_2018_CamSpec", "prior_info")
         assert filename == "ns_klcdm_planck_2018_CamSpec.prior_info"
 
+    @pytest.mark.vcr
     def test_get_filename_invalid_file_type(self):
         """Test that invalid file types raise ValueError."""
         db = Database()
         with pytest.raises(ValueError, match="Invalid file type"):
             db.get_filename("ns", "lcdm", "planck_2018_plik", "invalid_type")
 
+    @pytest.mark.vcr
     def test_get_filename_with_special_characters(self):
         """Test filename generation handles special characters properly."""
         db = Database()
@@ -148,6 +163,7 @@ class TestDatabaseCreator:
         assert isinstance(deposit_id, int)
         assert deposit_id > 0
 
+    @pytest.mark.vcr
     def test_create_metadata(self):
         """Test metadata creation for different models and datasets."""
         creator = DatabaseCreator(sandbox=True, ACCESS_TOKEN="fake-token")
@@ -162,6 +178,7 @@ class TestDatabaseCreator:
         metadata = creator.create_metadata("wlcdm", "bao.sdss_dr16")
         assert metadata["metadata"]["title"] == "unimpeded: wlcdm bao.sdss_dr16"
 
+    @pytest.mark.vcr
     def test_create_description(self):
         """Test description creation for deposits."""
         creator = DatabaseCreator(sandbox=True, ACCESS_TOKEN="fake-token")
@@ -169,6 +186,7 @@ class TestDatabaseCreator:
         description = creator.create_description("lcdm", "planck_2018_plik")
         assert description == "cosmological model:lcdm, dataset:planck_2018_plik"
 
+    @pytest.mark.vcr
     def test_initialization(self):
         """Test DatabaseCreator initialization."""
         # Test sandbox initialization
@@ -181,6 +199,7 @@ class TestDatabaseCreator:
         assert creator_prod.sandbox == False
         assert creator_prod.base_url == "https://zenodo.org/api/deposit/depositions"
 
+    @pytest.mark.vcr
     def test_database_creator_inherits_base_methods(self):
         """Test that DatabaseCreator inherits Database methods."""
         creator = DatabaseCreator(sandbox=True, ACCESS_TOKEN="fake-token")
@@ -192,7 +211,9 @@ class TestDatabaseCreator:
         # Should have access to models and datasets
         assert hasattr(creator, "models")
         assert hasattr(creator, "datasets")
-        assert "lcdm" in creator.models
+        # Check that models list is populated (sandbox may have different models)
+        assert len(creator.models) > 0
+        assert isinstance(creator.models, list)
 
 
 class TestDatabaseExplorer:
@@ -224,6 +245,7 @@ class TestDatabaseExplorer:
         assert "404 Client Error" in str(exc_info.value)
         assert "api/records/None" in str(exc_info.value)
 
+    @pytest.mark.vcr
     def test_title_formatting(self):
         """Test consistent title formatting between Creator and Explorer."""
         creator = DatabaseCreator(sandbox=True, ACCESS_TOKEN="fake-token")
@@ -235,6 +257,7 @@ class TestDatabaseExplorer:
         expected_title = metadata["metadata"]["title"]
         assert expected_title == "unimpeded: lcdm planck_2018_plik"
 
+    @pytest.mark.vcr
     def test_database_explorer_url_construction(self):
         """Test that DatabaseExplorer constructs URLs correctly."""
         explorer = DatabaseExplorer(sandbox=False)
@@ -259,6 +282,7 @@ class TestDatabaseIntegration:
         # Skip for now as it requires coordination between upload and download
         pytest.skip("Integration test requires published deposits")
 
+    @pytest.mark.vcr
     def test_filename_consistency(self):
         """Test that Creator and Explorer use consistent filenames."""
         creator = DatabaseCreator(sandbox=True)
@@ -276,6 +300,7 @@ class TestDatabaseIntegration:
         assert creator_filename == "ns_lcdm_planck_2018_plik.csv"
 
 
+@pytest.mark.vcr
 @pytest.mark.parametrize(
     "sampler,model,dataset,file_type",
     [

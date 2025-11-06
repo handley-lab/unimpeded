@@ -1,0 +1,296 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      User-Agent:
+      - python-requests/2.24.0
+    method: GET
+    uri: https://sandbox.zenodo.org/api/records?q=title%3A%22unimpeded%3A%22&size=1000&page=1
+  response:
+    body:
+      string: '{"hits": {"hits": [{"created": "2025-02-10T01:46:23.733713+00:00",
+        "modified": "2025-02-10T01:46:24.016630+00:00", "id": 162582, "conceptrecid":
+        "162581", "doi": "10.5072/zenodo.162582", "conceptdoi": "10.5072/zenodo.162581",
+        "doi_url": "https://handle.test.datacite.org/10.5072/zenodo.162582", "metadata":
+        {"title": "unimpeded: klcdm bao.sdss_dr16", "doi": "10.5072/zenodo.162582",
+        "publication_date": "2025-02-05", "description": "Method:mcmc, cosmological
+        model:klcdm, dataset:bao.sdss_dr16", "access_right": "open", "creators": [{"name":
+        "Ong, Dily", "affiliation": "University of Cambridge"}], "dates": [{"type":
+        "created"}], "resource_type": {"title": "Dataset", "type": "dataset"}, "license":
+        {"id": "cc-zero"}, "relations": {"version": [{"index": 0, "is_last": true,
+        "parent": {"pid_type": "recid", "pid_value": "162581"}}]}}, "title": "unimpeded:
+        klcdm bao.sdss_dr16", "links": {"self": "https://sandbox.zenodo.org/api/records/162582",
+        "self_html": "https://sandbox.zenodo.org/records/162582", "preview_html":
+        "https://sandbox.zenodo.org/records/162582?preview=1", "doi": "https://handle.test.datacite.org/10.5072/zenodo.162582",
+        "self_doi": "https://handle.test.datacite.org/10.5072/zenodo.162582", "self_doi_html":
+        "https://sandbox.zenodo.org/doi/10.5072/zenodo.162582", "reserve_doi": "https://sandbox.zenodo.org/api/records/162582/draft/pids/doi",
+        "parent": "https://sandbox.zenodo.org/api/records/162581", "parent_html":
+        "https://sandbox.zenodo.org/records/162581", "parent_doi": "https://handle.test.datacite.org/10.5072/zenodo.162581",
+        "parent_doi_html": "https://sandbox.zenodo.org/doi/10.5072/zenodo.162581",
+        "self_iiif_manifest": "https://sandbox.zenodo.org/api/iiif/record:162582/manifest",
+        "self_iiif_sequence": "https://sandbox.zenodo.org/api/iiif/record:162582/sequence/default",
+        "files": "https://sandbox.zenodo.org/api/records/162582/files", "media_files":
+        "https://sandbox.zenodo.org/api/records/162582/media-files", "archive": "https://sandbox.zenodo.org/api/records/162582/files-archive",
+        "archive_media": "https://sandbox.zenodo.org/api/records/162582/media-files-archive",
+        "latest": "https://sandbox.zenodo.org/api/records/162582/versions/latest",
+        "latest_html": "https://sandbox.zenodo.org/records/162582/latest", "versions":
+        "https://sandbox.zenodo.org/api/records/162582/versions", "draft": "https://sandbox.zenodo.org/api/records/162582/draft",
+        "access_links": "https://sandbox.zenodo.org/api/records/162582/access/links",
+        "access_grants": "https://sandbox.zenodo.org/api/records/162582/access/grants",
+        "access_users": "https://sandbox.zenodo.org/api/records/162582/access/users",
+        "access_request": "https://sandbox.zenodo.org/api/records/162582/access/request",
+        "access": "https://sandbox.zenodo.org/api/records/162582/access", "communities":
+        "https://sandbox.zenodo.org/api/records/162582/communities", "communities-suggestions":
+        "https://sandbox.zenodo.org/api/records/162582/communities-suggestions", "request_deletion":
+        "https://sandbox.zenodo.org/api/records/162582/request-deletion", "file_modification":
+        "https://sandbox.zenodo.org/api/records/162582/file-modification", "requests":
+        "https://sandbox.zenodo.org/api/records/162582/requests"}, "updated": "2025-02-10T01:46:24.016630+00:00",
+        "recid": "162582", "revision": 3, "files": [{"id": "5849f8bb-fdbd-4f95-a312-2fb4ae64b1f3",
+        "key": "ns_klcdm_bao.sdss_dr16.prior_info", "size": 48, "checksum": "md5:1597889ef3a98ff05a05741a896ac9f0",
+        "links": {"self": "https://sandbox.zenodo.org/api/records/162582/files/ns_klcdm_bao.sdss_dr16.prior_info/content"}},
+        {"id": "304593d8-b8e6-4d41-9716-94d2a1f32256", "key": "ns_klcdm_bao.sdss_dr16.csv",
+        "size": 29544603, "checksum": "md5:21d690ebf5c71833f9354ece567f32a7", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162582/files/ns_klcdm_bao.sdss_dr16.csv/content"}},
+        {"id": "36d24b28-16c3-4038-9ae7-1518747d6d76", "key": "mcmc_klcdm_bao.sdss_dr16.yaml",
+        "size": 7698, "checksum": "md5:5cc73b08b3f1929c3342fa0b783abb73", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162582/files/mcmc_klcdm_bao.sdss_dr16.yaml/content"}},
+        {"id": "b57b69a3-7ee7-47f1-80ee-d57ab0753924", "key": "mcmc_klcdm_bao.sdss_dr16.csv",
+        "size": 23441489, "checksum": "md5:f68c446958ca2e5c5149dd8fca230062", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162582/files/mcmc_klcdm_bao.sdss_dr16.csv/content"}},
+        {"id": "e9796598-d207-4670-9326-42c04fde6da9", "key": "ns_klcdm_bao.sdss_dr16.yaml",
+        "size": 7743, "checksum": "md5:b32479a354e327dcfab1adc3b124bd08", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162582/files/ns_klcdm_bao.sdss_dr16.yaml/content"}}],
+        "swh": null, "owners": [{"id": "36914"}], "status": "published", "stats":
+        {"downloads": 0, "unique_downloads": 0, "views": 0, "unique_views": 0, "version_downloads":
+        0, "version_unique_downloads": 0, "version_unique_views": 0, "version_views":
+        0}, "state": "done", "submitted": true}, {"created": "2025-02-10T01:39:18.194928+00:00",
+        "modified": "2025-02-10T01:39:18.485895+00:00", "id": 162596, "conceptrecid":
+        "162595", "doi": "10.5072/zenodo.162596", "conceptdoi": "10.5072/zenodo.162595",
+        "doi_url": "https://handle.test.datacite.org/10.5072/zenodo.162596", "metadata":
+        {"title": "unimpeded: wlcdm bao.sdss_dr16", "doi": "10.5072/zenodo.162596",
+        "publication_date": "2025-02-06", "description": "cosmological model:wlcdm,
+        dataset:bao.sdss_dr16", "access_right": "open", "creators": [{"name": "Ong,
+        Dily", "affiliation": "University of Cambridge"}], "dates": [{"type": "created"}],
+        "resource_type": {"title": "Dataset", "type": "dataset"}, "license": {"id":
+        "cc-zero"}, "relations": {"version": [{"index": 0, "is_last": true, "parent":
+        {"pid_type": "recid", "pid_value": "162595"}}]}}, "title": "unimpeded: wlcdm
+        bao.sdss_dr16", "links": {"self": "https://sandbox.zenodo.org/api/records/162596",
+        "self_html": "https://sandbox.zenodo.org/records/162596", "preview_html":
+        "https://sandbox.zenodo.org/records/162596?preview=1", "doi": "https://handle.test.datacite.org/10.5072/zenodo.162596",
+        "self_doi": "https://handle.test.datacite.org/10.5072/zenodo.162596", "self_doi_html":
+        "https://sandbox.zenodo.org/doi/10.5072/zenodo.162596", "reserve_doi": "https://sandbox.zenodo.org/api/records/162596/draft/pids/doi",
+        "parent": "https://sandbox.zenodo.org/api/records/162595", "parent_html":
+        "https://sandbox.zenodo.org/records/162595", "parent_doi": "https://handle.test.datacite.org/10.5072/zenodo.162595",
+        "parent_doi_html": "https://sandbox.zenodo.org/doi/10.5072/zenodo.162595",
+        "self_iiif_manifest": "https://sandbox.zenodo.org/api/iiif/record:162596/manifest",
+        "self_iiif_sequence": "https://sandbox.zenodo.org/api/iiif/record:162596/sequence/default",
+        "files": "https://sandbox.zenodo.org/api/records/162596/files", "media_files":
+        "https://sandbox.zenodo.org/api/records/162596/media-files", "archive": "https://sandbox.zenodo.org/api/records/162596/files-archive",
+        "archive_media": "https://sandbox.zenodo.org/api/records/162596/media-files-archive",
+        "latest": "https://sandbox.zenodo.org/api/records/162596/versions/latest",
+        "latest_html": "https://sandbox.zenodo.org/records/162596/latest", "versions":
+        "https://sandbox.zenodo.org/api/records/162596/versions", "draft": "https://sandbox.zenodo.org/api/records/162596/draft",
+        "access_links": "https://sandbox.zenodo.org/api/records/162596/access/links",
+        "access_grants": "https://sandbox.zenodo.org/api/records/162596/access/grants",
+        "access_users": "https://sandbox.zenodo.org/api/records/162596/access/users",
+        "access_request": "https://sandbox.zenodo.org/api/records/162596/access/request",
+        "access": "https://sandbox.zenodo.org/api/records/162596/access", "communities":
+        "https://sandbox.zenodo.org/api/records/162596/communities", "communities-suggestions":
+        "https://sandbox.zenodo.org/api/records/162596/communities-suggestions", "request_deletion":
+        "https://sandbox.zenodo.org/api/records/162596/request-deletion", "file_modification":
+        "https://sandbox.zenodo.org/api/records/162596/file-modification", "requests":
+        "https://sandbox.zenodo.org/api/records/162596/requests"}, "updated": "2025-02-10T01:39:18.485895+00:00",
+        "recid": "162596", "revision": 3, "files": [{"id": "3a59de47-d0b3-4664-bf9a-3a06d06ed8a2",
+        "key": "mcmc_wlcdm_bao.sdss_dr16.csv", "size": 26784280, "checksum": "md5:d02c7ccfed1687c1cbf30a4525cd0333",
+        "links": {"self": "https://sandbox.zenodo.org/api/records/162596/files/mcmc_wlcdm_bao.sdss_dr16.csv/content"}},
+        {"id": "a2acacc4-be4b-4fa6-a3ca-cb48a60abac9", "key": "ns_wlcdm_bao.sdss_dr16.prior_info",
+        "size": 48, "checksum": "md5:fedf2cd5e404ae13224da4702f24eadd", "links": {"self":
+        "https://sandbox.zenodo.org/api/records/162596/files/ns_wlcdm_bao.sdss_dr16.prior_info/content"}},
+        {"id": "ca805258-dbbf-4481-b1f0-74add19c845a", "key": "ns_wlcdm_bao.sdss_dr16.yaml",
+        "size": 7617, "checksum": "md5:b69fe274cd04300fcdb6cc0baa45ef37", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162596/files/ns_wlcdm_bao.sdss_dr16.yaml/content"}},
+        {"id": "8809c1f5-10af-4751-a446-f7518239f398", "key": "ns_wlcdm_bao.sdss_dr16.csv",
+        "size": 29170868, "checksum": "md5:ecf1b1ca8dd68dcd4ea44a3ce0e594f0", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162596/files/ns_wlcdm_bao.sdss_dr16.csv/content"}},
+        {"id": "47515898-1016-4362-95a1-3f6a838ee115", "key": "mcmc_wlcdm_bao.sdss_dr16.yaml",
+        "size": 7572, "checksum": "md5:23420d9fe170eab963d4d2def0fe35a7", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162596/files/mcmc_wlcdm_bao.sdss_dr16.yaml/content"}}],
+        "swh": null, "owners": [{"id": "36914"}], "status": "published", "stats":
+        {"downloads": 1, "unique_downloads": 1, "views": 1, "unique_views": 1, "version_downloads":
+        1, "version_unique_downloads": 1, "version_unique_views": 1, "version_views":
+        1}, "state": "done", "submitted": true}, {"created": "2025-02-10T01:47:26.002746+00:00",
+        "modified": "2025-02-10T01:47:26.312852+00:00", "id": 161792, "conceptrecid":
+        "161791", "doi": "10.5072/zenodo.161792", "conceptdoi": "10.5072/zenodo.161791",
+        "doi_url": "https://handle.test.datacite.org/10.5072/zenodo.161792", "metadata":
+        {"title": "unimpeded: klcdm bao.sdss_dr16", "doi": "10.5072/zenodo.161792",
+        "publication_date": "2025-02-04", "description": "Method:mcmc, cosmological
+        model:klcdm, dataset:bao.sdss_dr16", "access_right": "open", "creators": [{"name":
+        "Ong, Dily", "affiliation": "University of Cambridge"}], "dates": [{"type":
+        "created"}], "resource_type": {"title": "Dataset", "type": "dataset"}, "license":
+        {"id": "cc-zero"}, "relations": {"version": [{"index": 0, "is_last": true,
+        "parent": {"pid_type": "recid", "pid_value": "161791"}}]}}, "title": "unimpeded:
+        klcdm bao.sdss_dr16", "links": {"self": "https://sandbox.zenodo.org/api/records/161792",
+        "self_html": "https://sandbox.zenodo.org/records/161792", "preview_html":
+        "https://sandbox.zenodo.org/records/161792?preview=1", "doi": "https://handle.test.datacite.org/10.5072/zenodo.161792",
+        "self_doi": "https://handle.test.datacite.org/10.5072/zenodo.161792", "self_doi_html":
+        "https://sandbox.zenodo.org/doi/10.5072/zenodo.161792", "reserve_doi": "https://sandbox.zenodo.org/api/records/161792/draft/pids/doi",
+        "parent": "https://sandbox.zenodo.org/api/records/161791", "parent_html":
+        "https://sandbox.zenodo.org/records/161791", "parent_doi": "https://handle.test.datacite.org/10.5072/zenodo.161791",
+        "parent_doi_html": "https://sandbox.zenodo.org/doi/10.5072/zenodo.161791",
+        "self_iiif_manifest": "https://sandbox.zenodo.org/api/iiif/record:161792/manifest",
+        "self_iiif_sequence": "https://sandbox.zenodo.org/api/iiif/record:161792/sequence/default",
+        "files": "https://sandbox.zenodo.org/api/records/161792/files", "media_files":
+        "https://sandbox.zenodo.org/api/records/161792/media-files", "archive": "https://sandbox.zenodo.org/api/records/161792/files-archive",
+        "archive_media": "https://sandbox.zenodo.org/api/records/161792/media-files-archive",
+        "latest": "https://sandbox.zenodo.org/api/records/161792/versions/latest",
+        "latest_html": "https://sandbox.zenodo.org/records/161792/latest", "versions":
+        "https://sandbox.zenodo.org/api/records/161792/versions", "draft": "https://sandbox.zenodo.org/api/records/161792/draft",
+        "access_links": "https://sandbox.zenodo.org/api/records/161792/access/links",
+        "access_grants": "https://sandbox.zenodo.org/api/records/161792/access/grants",
+        "access_users": "https://sandbox.zenodo.org/api/records/161792/access/users",
+        "access_request": "https://sandbox.zenodo.org/api/records/161792/access/request",
+        "access": "https://sandbox.zenodo.org/api/records/161792/access", "communities":
+        "https://sandbox.zenodo.org/api/records/161792/communities", "communities-suggestions":
+        "https://sandbox.zenodo.org/api/records/161792/communities-suggestions", "request_deletion":
+        "https://sandbox.zenodo.org/api/records/161792/request-deletion", "file_modification":
+        "https://sandbox.zenodo.org/api/records/161792/file-modification", "requests":
+        "https://sandbox.zenodo.org/api/records/161792/requests"}, "updated": "2025-02-10T01:47:26.312852+00:00",
+        "recid": "161792", "revision": 3, "files": [{"id": "d908eee0-9624-47c4-8314-3c5caf2b5a6c",
+        "key": "ns_klcdm_bao.sdss_dr16.yaml", "size": 7743, "checksum": "md5:b32479a354e327dcfab1adc3b124bd08",
+        "links": {"self": "https://sandbox.zenodo.org/api/records/161792/files/ns_klcdm_bao.sdss_dr16.yaml/content"}},
+        {"id": "38b44a3d-a7ec-47eb-91f2-3b05f47a712b", "key": "ns_klcdm_bao.sdss_dr16.prior_info",
+        "size": 48, "checksum": "md5:1597889ef3a98ff05a05741a896ac9f0", "links": {"self":
+        "https://sandbox.zenodo.org/api/records/161792/files/ns_klcdm_bao.sdss_dr16.prior_info/content"}},
+        {"id": "5564e4c7-ba1e-4af3-9162-f1a1eecface3", "key": "mcmc_klcdm_bao.sdss_dr16.yaml",
+        "size": 7698, "checksum": "md5:5cc73b08b3f1929c3342fa0b783abb73", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/161792/files/mcmc_klcdm_bao.sdss_dr16.yaml/content"}},
+        {"id": "b6753fc2-1fa6-4395-b640-d8a20d0b3ebe", "key": "ns_klcdm_bao.sdss_dr16.csv",
+        "size": 29544603, "checksum": "md5:21d690ebf5c71833f9354ece567f32a7", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/161792/files/ns_klcdm_bao.sdss_dr16.csv/content"}},
+        {"id": "d4e1735d-1c51-4b79-aaac-ece3c423abc7", "key": "mcmc_klcdm_bao.sdss_dr16.csv",
+        "size": 23441489, "checksum": "md5:f68c446958ca2e5c5149dd8fca230062", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/161792/files/mcmc_klcdm_bao.sdss_dr16.csv/content"}}],
+        "swh": null, "owners": [{"id": "36914"}], "status": "published", "stats":
+        {"downloads": 11, "unique_downloads": 7, "views": 1, "unique_views": 1, "version_downloads":
+        11, "version_unique_downloads": 7, "version_unique_views": 1, "version_views":
+        1}, "state": "done", "submitted": true}, {"created": "2025-02-10T01:43:51.038927+00:00",
+        "modified": "2025-02-10T01:43:51.415594+00:00", "id": 162588, "conceptrecid":
+        "162587", "doi": "10.5072/zenodo.162588", "conceptdoi": "10.5072/zenodo.162587",
+        "doi_url": "https://handle.test.datacite.org/10.5072/zenodo.162588", "metadata":
+        {"title": "unimpeded: klcdm bicep_keck_2018", "doi": "10.5072/zenodo.162588",
+        "publication_date": "2025-02-05", "description": "Method:ns, cosmological
+        model:klcdm, dataset:bicep_keck_2018", "access_right": "open", "creators":
+        [{"name": "Ong, Dily", "affiliation": "University of Cambridge"}], "dates":
+        [{"type": "created"}], "resource_type": {"title": "Dataset", "type": "dataset"},
+        "license": {"id": "cc-zero"}, "relations": {"version": [{"index": 0, "is_last":
+        true, "parent": {"pid_type": "recid", "pid_value": "162587"}}]}}, "title":
+        "unimpeded: klcdm bicep_keck_2018", "links": {"self": "https://sandbox.zenodo.org/api/records/162588",
+        "self_html": "https://sandbox.zenodo.org/records/162588", "preview_html":
+        "https://sandbox.zenodo.org/records/162588?preview=1", "doi": "https://handle.test.datacite.org/10.5072/zenodo.162588",
+        "self_doi": "https://handle.test.datacite.org/10.5072/zenodo.162588", "self_doi_html":
+        "https://sandbox.zenodo.org/doi/10.5072/zenodo.162588", "reserve_doi": "https://sandbox.zenodo.org/api/records/162588/draft/pids/doi",
+        "parent": "https://sandbox.zenodo.org/api/records/162587", "parent_html":
+        "https://sandbox.zenodo.org/records/162587", "parent_doi": "https://handle.test.datacite.org/10.5072/zenodo.162587",
+        "parent_doi_html": "https://sandbox.zenodo.org/doi/10.5072/zenodo.162587",
+        "self_iiif_manifest": "https://sandbox.zenodo.org/api/iiif/record:162588/manifest",
+        "self_iiif_sequence": "https://sandbox.zenodo.org/api/iiif/record:162588/sequence/default",
+        "files": "https://sandbox.zenodo.org/api/records/162588/files", "media_files":
+        "https://sandbox.zenodo.org/api/records/162588/media-files", "archive": "https://sandbox.zenodo.org/api/records/162588/files-archive",
+        "archive_media": "https://sandbox.zenodo.org/api/records/162588/media-files-archive",
+        "latest": "https://sandbox.zenodo.org/api/records/162588/versions/latest",
+        "latest_html": "https://sandbox.zenodo.org/records/162588/latest", "versions":
+        "https://sandbox.zenodo.org/api/records/162588/versions", "draft": "https://sandbox.zenodo.org/api/records/162588/draft",
+        "access_links": "https://sandbox.zenodo.org/api/records/162588/access/links",
+        "access_grants": "https://sandbox.zenodo.org/api/records/162588/access/grants",
+        "access_users": "https://sandbox.zenodo.org/api/records/162588/access/users",
+        "access_request": "https://sandbox.zenodo.org/api/records/162588/access/request",
+        "access": "https://sandbox.zenodo.org/api/records/162588/access", "communities":
+        "https://sandbox.zenodo.org/api/records/162588/communities", "communities-suggestions":
+        "https://sandbox.zenodo.org/api/records/162588/communities-suggestions", "request_deletion":
+        "https://sandbox.zenodo.org/api/records/162588/request-deletion", "file_modification":
+        "https://sandbox.zenodo.org/api/records/162588/file-modification", "requests":
+        "https://sandbox.zenodo.org/api/records/162588/requests"}, "updated": "2025-02-10T01:43:51.415594+00:00",
+        "recid": "162588", "revision": 3, "files": [{"id": "8764eb6c-1b71-459f-b10a-9d561a3df29c",
+        "key": "ns_klcdm_bicep_keck_2018.csv", "size": 34934403, "checksum": "md5:6603e74241de920d7ad96db622d25390",
+        "links": {"self": "https://sandbox.zenodo.org/api/records/162588/files/ns_klcdm_bicep_keck_2018.csv/content"}},
+        {"id": "2ea6d5c7-3dc3-410b-9835-1851026bf570", "key": "ns_klcdm_bicep_keck_2018.yaml",
+        "size": 6715, "checksum": "md5:ce533194da01db4266b6e2220b7948f7", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162588/files/ns_klcdm_bicep_keck_2018.yaml/content"}},
+        {"id": "635cd630-4234-4809-8c4d-f652ceffec77", "key": "mcmc_klcdm_bicep_keck_2018.csv",
+        "size": 77076773, "checksum": "md5:6dc1ebbf7451dfbd38a12d0f0f68a1b6", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162588/files/mcmc_klcdm_bicep_keck_2018.csv/content"}},
+        {"id": "b1d220db-e24b-4e04-bb2b-3b807d1628db", "key": "ns_klcdm_bicep_keck_2018.prior_info",
+        "size": 48, "checksum": "md5:f7539cb51b2f457dfe66b9bcf44f1c7b", "links": {"self":
+        "https://sandbox.zenodo.org/api/records/162588/files/ns_klcdm_bicep_keck_2018.prior_info/content"}},
+        {"id": "6883b933-ccb3-4beb-8bff-17a9246d0c2b", "key": "mcmc_klcdm_bicep_keck_2018.yaml",
+        "size": 6671, "checksum": "md5:687c3fa447cc044bfab3da4e32e42c54", "links":
+        {"self": "https://sandbox.zenodo.org/api/records/162588/files/mcmc_klcdm_bicep_keck_2018.yaml/content"}}],
+        "swh": null, "owners": [{"id": "36914"}], "status": "published", "stats":
+        {"downloads": 2, "unique_downloads": 2, "views": 1, "unique_views": 1, "version_downloads":
+        2, "version_unique_downloads": 2, "version_unique_views": 1, "version_views":
+        1}, "state": "done", "submitted": true}], "total": 4}, "aggregations": {"access_status":
+        {"buckets": [{"key": "open", "doc_count": 4, "label": "Open", "is_selected":
+        false}], "label": "Access status"}, "resource_type": {"buckets": [{"key":
+        "dataset", "doc_count": 4, "label": "Dataset", "is_selected": false, "inner":
+        {"buckets": []}}], "label": "Resource types"}, "subject": {"buckets": [],
+        "label": "Subjects"}, "file_type": {"buckets": [{"key": "bin", "doc_count":
+        4, "label": "BIN", "is_selected": false}, {"key": "csv", "doc_count": 4, "label":
+        "CSV", "is_selected": false}, {"key": "yaml", "doc_count": 4, "label": "YAML",
+        "is_selected": false}], "label": "File type"}}, "links": {"self": "https://sandbox.zenodo.org/api/records?page=1&q=title%3A%22unimpeded%3A%22&size=1000&sort=bestmatch"}}'
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - Content-Type, ETag, Link, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
+      content-length:
+      - '20285'
+      content-security-policy:
+      - 'default-src ''self'' fonts.googleapis.com *.gstatic.com data: ''unsafe-inline''
+        ''unsafe-eval'' blob: zenodo-broker.web.cern.ch zenodo-broker-qa.web.cern.ch
+        maxcdn.bootstrapcdn.com cdnjs.cloudflare.com ajax.googleapis.com webanalytics.web.cern.ch'
+      content-type:
+      - application/json
+      date:
+      - Tue, 04 Nov 2025 18:27:26 GMT
+      permissions-policy:
+      - interest-cohort=()
+      referrer-policy:
+      - strict-origin-when-cross-origin
+      retry-after:
+      - '59'
+      server:
+      - nginx
+      set-cookie:
+      - 04f20c86f07421a9ec0f9d5ba4be544f=223c9ec68b65ae77e83d12aed33b0316; path=/;
+        HttpOnly; Secure; SameSite=None
+      strict-transport-security:
+      - max-age=31556926; includeSubDomains
+      - max-age=15768000
+      transfer-encoding:
+      - chunked
+      vary:
+      - Accept-Encoding
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - sameorigin
+      x-ratelimit-limit:
+      - '133'
+      x-ratelimit-remaining:
+      - '132'
+      x-ratelimit-reset:
+      - '1762280906'
+      x-request-id:
+      - 06fe07bd20d7546257e064ecf4991a3e
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

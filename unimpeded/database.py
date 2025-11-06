@@ -65,7 +65,9 @@ class Database:
                     title = hit.get("metadata", {}).get("title", "")
                     # Expected format: "unimpeded: model dataset"
                     if title.startswith("unimpeded: "):
-                        parts = title.replace("unimpeded: ", "").strip().split(maxsplit=1)
+                        parts = (
+                            title.replace("unimpeded: ", "").strip().split(maxsplit=1)
+                        )
                         if len(parts) == 2:
                             model, dataset = parts
                             models.add(model)
@@ -80,10 +82,7 @@ class Database:
         except requests.RequestException as e:
             print(f"Error fetching deposits: {e}")
 
-        return {
-            "models": sorted(list(models)),
-            "datasets": sorted(list(datasets))
-        }
+        return {"models": sorted(list(models)), "datasets": sorted(list(datasets))}
 
     def get_filename(self, method, model, dataset, filestype):
         """
