@@ -1,5 +1,5 @@
 ---
-title: 'unimpeded: A Public Nested Sampling Database for Cosmology'
+title: 'unimpeded: A Public Nested Sampling Database for Bayesian Cosmology'
 tags:
   - Python
   - cosmology
