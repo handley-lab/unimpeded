@@ -36,8 +36,38 @@ Bayesian inference is central to modern cosmology. While parameter estimation is
 `unimpeded` addresses these challenges directly. It provides a pip-installable tool that leverages the `anesthetic` package [@Handley2019] for analysis and introduces a seamless Zenodo integration for data management. The nested sampling theory and methodology are detailed in @Ong2025. Its main features are:
 
 1.  **A Public Nested Sampling Grid:** The package provides access to a pre-computed grid of nested sampling chains for 8 cosmological models (standard $\Lambda$CDM and seven extensions), run against 39 datasets (comprising individual probes and their pairwise combinations). This saves the community significant computational resources and provides a common baseline for new analyses. Evidence and Kullback-Leibler divergence can be calculated jointly with `anesthetic` for model comparison and quantifying the constraining power of datasets and models, respectively. The scientific results from this grid are presented in Ong & Handley (in prep).
-2.  **Archival and Reproducibility via Zenodo:** `unimpeded` automates the process of archiving analysis products. The `DatabaseCreator` class bundles chains and metadata, uploading them to a Zenodo community to generate a permanent, citable Digital Object Identifier (DOI). The `DatabaseExplorer` class allows public user to easily download and analyse these chains, promoting open science and effortless reproducibility. Figure 1 illustrates the `unimpeded` ecosystem, detailing its three core functions. For data generation, it configures YAML files for HPC nested sampling. It then archives the chains on Zenodo, ensuring reproducibility with permanent DOIs, and finally provides an interface for post-processing analysis and visualisation with `anesthetic`.
-3.  **Tension Statistics Calculator:** With the nested sampling chains and the built-in tension statistics calculator, six tension quantification metrics with different characteristics are available, including the $R$ statistic, information ratio $I$, suspiciousness $S$, Gaussian model dimensionality $d_G$, tension significance in units of $\sigma$, and p-value. Each of them has unique characteristics optimised for different tasks, thoroughly discussed in @Ong2025. `unimpeded` implements these statistics with the necessary F-correction to account for discarded prior volume [@Handley2019a; @Handley2021]. Figure 2 demonstrates the tension calculator output showing p-value derived tension significance ($\sigma$) for 31 pairwise dataset combinations across 8 cosmological models, sorted by significance to highlight the most problematic dataset pairs.
+2.  **Archival and Reproducibility via Zenodo:** `unimpeded` automates the process of archiving analysis products. The `DatabaseCreator` class bundles chains and metadata, uploading them to a Zenodo community to generate a permanent, citable Digital Object Identifier (DOI). The `DatabaseExplorer` class allows public user to easily download and analyse these chains, promoting open science and effortless reproducibility. Figure 1 illustrates the `unimpeded` ecosystem, detailing its three core functions. For data generation, it configures YAML files for HPC nested sampling. It then archives the chains on Zenodo, ensuring reproducibility with permanent DOIs, and finally provides an interface for post-processing analysis and visualisation with `anesthetic`. The following example demonstrates downloading chains:
+```python
+from unimpeded.database import DatabaseExplorer
+
+# Initialise DatabaseExplorer
+dbe = DatabaseExplorer()
+
+# Get a list of currently available models and datasets
+models_list = dbe.models
+datasets_list = dbe.datasets
+
+# Choose model, dataset and sampling method
+method = 'ns'  # 'ns' for nested sampling, 'mcmc' for MCMC
+model = "klcdm"  # from models_list
+dataset = "des_y1.joint+planck_2018_CamSpec"  # from datasets_list
+
+# Download samples chain
+samples = dbe.download_samples(method, model, dataset)
+
+# Download Cobaya and PolyChord run settings
+info = dbe.download_info(method, model, dataset)
+```
+3.  **Tension Statistics Calculator:** With the nested sampling chains and the built-in tension statistics calculator, six tension quantification metrics with different characteristics are available, including the $R$ statistic, information ratio $I$, suspiciousness $S$, Gaussian model dimensionality $d_G$, tension significance in units of $\sigma$, and p-value. Each of them has unique characteristics optimised for different tasks, thoroughly discussed in @Ong2025. `unimpeded` implements these statistics with the necessary F-correction to account for discarded prior volume [@Handley2019a; @Handley2021]. Figure 2 demonstrates the tension calculator output showing p-value derived tension significance ($\sigma$) for 31 pairwise dataset combinations across 8 cosmological models, sorted by significance to highlight the most problematic dataset pairs. The following minimal example demonstrates the usage:
+```python
+from unimpeded.tension import tension_calculator
+
+tension_samples = tension_calculator(method='ns',
+                                      model='lcdm',
+                                      datasetA='planck_2018_CamSpec',
+                                      datasetB='des_y1.joint',
+                                      nsamples=1000)
+```
 
 ![The `unimpeded` ecosystem and workflow. At the centre, `unimpeded` manages data archival and retrieval through Zenodo, providing permanent DOIs and public access to pre-computed chains. For data generation, `unimpeded` configures YAML files for resource-intensive HPC nested sampling using `Cobaya`, `PolyChord`, and `CAMB`. For analysis, users download chains via `DatabaseExplorer` and leverage `anesthetic` for visualisation (corner plots, posterior distributions, constraint contours) and tension quantification (six metrics: $R$ statistic, information ratio $I$, suspiciousness $S$, Bayesian model dimensionality $d_G$, significance $\sigma$, and $p$-value).\label{fig:workflow}](flowchart.pdf)
 
