@@ -65,11 +65,11 @@
     anchor=north west,
     at=(unimpeded.south),
     yshift=-1.5cm,
-    xshift=2cm,   % Half of desired gap (4cm gap total)
-    text width=4.5cm]
+    xshift=0.5cm,   % Adjusted for wider box
+    text width=6.5cm]
 {
     \textbf{anesthetic}\\[10pt]
-    Tension Calculator\\
+    Tension statistics calculator\\
     Visualisation
 };
 
@@ -88,7 +88,7 @@
     node[midway, right, font=\small, align=center] {Nested sampling chains \\ MCMC chains}
     (unimpeded.south -| hpc-right);
 
-\draw [arrow] (unimpeded.south -| anesthetic.north) -- node[midway, right, font=\small, text width=2cm, align=center] {Analysis Pipeline} (anesthetic.north);
+\draw [arrow] (unimpeded.south -| anesthetic.north) -- node[midway, right, font=\small, text width=2cm, align=center] {Analysis Pipelines} (anesthetic.north);
 
 % OUTPUTS box
 \node (outputs) [outputbox, below=1.5cm of current bounding box.south] {
