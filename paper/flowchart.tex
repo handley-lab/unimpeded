@@ -37,10 +37,13 @@
 };
 
 % Upload and Download arrows
-% Upload arrow now goes UP from unimpeded to zenodo
-\draw [arrow] ([xshift=-1.5cm]unimpeded.north) -- node[midway, left, font=\small] {Upload} (left-arrow);
-% Download arrow now goes DOWN from zenodo to unimpeded
-\draw [arrow] (right-arrow) -- node[midway, right, font=\small] {Download} ([xshift=1.5cm]unimpeded.north);
+% Upload arrow (up) starts from the level of unimpeded.north
+% and aligns vertically with left-arrow.
+\draw [arrow] (unimpeded.north -| left-arrow) -- node[midway, left, font=\small] {Upload} (left-arrow);
+
+% Download arrow (down) ends at the level of unimpeded.north
+% and aligns vertically with right-arrow.
+\draw [arrow] (right-arrow) -- node[midway, right, font=\small] {Download} (unimpeded.north -| right-arrow);
 
 % HPC and anesthetic boxes side by side
 % Position both relative to unimpeded.south (center bottom) for better control
@@ -71,14 +74,21 @@
 };
 
 % Arrows from unimpeded
-\draw [arrow] (unimpeded.south -| hpc.north) -- node[midway, left, font=\small, text width=1.5cm, align=center] {Setup YAML} (hpc.north);
-\draw [arrow] (unimpeded.south -| anesthetic.north) -- node[midway, right, font=\small, text width=2cm, align=center] {Analysis Pipeline} (anesthetic.north);
+% Define shifted coordinates for symmetrical arrows
+\coordinate (hpc-left) at ([xshift=0.5cm]hpc.north);
+\coordinate (hpc-right) at ([xshift=2cm]hpc.north);
 
-% Arrow from HPC to anesthetic (forced horizontal using perpendicular coordinates)
-\draw [arrow] (hpc.east) --
-    node[midway, above, font=\small, align=center]
-    {Nested sampling chains \\ MCMC chains}
-    (hpc -| anesthetic.west);
+% 1. Existing "Setup YAML" arrow to the LEFT (pointing down)
+\draw [arrow] (unimpeded.south -| hpc-left) --
+    node[midway, left, font=\small] {Setup YAML}
+    (hpc-left);
+
+% 2. NEW "Chains" arrow on the RIGHT (pointing UP)
+\draw [arrow] (hpc-right) --
+    node[midway, right, font=\small, align=center] {Nested sampling chains \\ MCMC chains}
+    (unimpeded.south -| hpc-right);
+
+\draw [arrow] (unimpeded.south -| anesthetic.north) -- node[midway, right, font=\small, text width=2cm, align=center] {Analysis Pipeline} (anesthetic.north);
 
 % OUTPUTS box
 \node (outputs) [outputbox, below=1.5cm of current bounding box.south] {
