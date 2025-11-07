@@ -37,8 +37,10 @@
 };
 
 % Upload and Download arrows
-\draw [arrow] (left-arrow) -- node[midway, left, font=\small] {Upload} ++(0,-1.5);
-\draw [arrow] (right-arrow) -- node[midway, right, font=\small] {Download} ++(0,-1.5);
+% Upload arrow now goes UP from unimpeded to zenodo
+\draw [arrow] ([xshift=-1.5cm]unimpeded.north) -- node[midway, left, font=\small] {Upload} (left-arrow);
+% Download arrow now goes DOWN from zenodo to unimpeded
+\draw [arrow] (right-arrow) -- node[midway, right, font=\small] {Download} ([xshift=1.5cm]unimpeded.north);
 
 % HPC and anesthetic boxes side by side
 % Position both relative to unimpeded.south (center bottom) for better control
