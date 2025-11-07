@@ -1,0 +1,102 @@
+\documentclass[border=10pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, calc}
+
+\begin{document}
+
+\tikzset{
+    box/.style={rectangle, minimum width=10cm, minimum height=1.2cm,
+                text centered, draw=black, line width=1pt, align=center},
+    sidebox/.style={rectangle, minimum width=4.8cm, minimum height=2.2cm,
+                    text centered, draw=black, line width=1pt, align=center},
+    outputbox/.style={rectangle, minimum width=10cm, minimum height=3.5cm,
+                     draw=black, line width=1pt, align=left, inner sep=10pt},
+    arrow/.style={->, >=Stealth, line width=1pt},
+    doublearrow/.style={<->, >=Stealth, line width=1pt},
+    arrowlabel/.style={font=\small, fill=white, inner sep=2pt}
+}
+
+\begin{tikzpicture}[node distance=1.5cm, every node/.style={font=\ttfamily}]
+
+% Top: Zenodo
+\node (zenodo) [box] {
+    \textbf{ZENODO ARCHIVE}\\
+    Permanent DOIs\\
+    Public Community
+};
+
+% Bidirectional arrows to unimpeded
+\coordinate (left-arrow) at ([xshift=-2cm]zenodo.south);
+\coordinate (right-arrow) at ([xshift=2cm]zenodo.south);
+
+% unimpeded box
+\node (unimpeded) [box, below=1.5cm of zenodo] {
+    \textbf{unimpeded}\\
+    DatabaseCreator / DatabaseExplorer\\
+    39 datasets $\times$ 8 models (to be expanded)
+};
+
+% Upload and Download arrows
+\draw [arrow] (left-arrow) -- node[midway, left, font=\small] {Upload} ++(0,-1.5);
+\draw [arrow] (right-arrow) -- node[midway, right, font=\small] {Download} ++(0,-1.5);
+
+% HPC and anesthetic boxes side by side
+% Position both relative to unimpeded.south (center bottom) for better control
+\node (hpc) [sidebox,
+    anchor=north east,
+    at=(unimpeded.south),
+    yshift=-1.5cm,
+    xshift=-2cm,  % Half of desired gap (4cm gap total)
+    text width=4.5cm]
+{
+    \textbf{HPC SAMPLING}\\
+    Cobaya +\\
+    PolyChord +\\
+    CAMB\\[6pt]
+    Resource-intensive
+};
+
+\node (anesthetic) [sidebox,
+    anchor=north west,
+    at=(unimpeded.south),
+    yshift=-1.5cm,
+    xshift=2cm,   % Half of desired gap (4cm gap total)
+    text width=4.5cm]
+{
+    \textbf{anesthetic}\\[10pt]
+    Tension Calculator\\
+    Visualisation
+};
+
+% Arrows from unimpeded
+\draw [arrow] (unimpeded.south -| hpc.north) -- node[midway, left, font=\small, text width=1.5cm, align=center] {Setup YAML} (hpc.north);
+\draw [arrow] (unimpeded.south -| anesthetic.north) -- node[midway, right, font=\small, text width=2cm, align=center] {Analysis Pipeline} (anesthetic.north);
+
+% Arrow from HPC to anesthetic (forced horizontal using perpendicular coordinates)
+\draw [arrow] (hpc.east) --
+    node[midway, above, font=\small, align=center]
+    {Nested sampling chains \\ MCMC chains}
+    (hpc -| anesthetic.west);
+
+% OUTPUTS box
+\node (outputs) [outputbox, below=1.5cm of current bounding box.south] {
+    \textbf{OUTPUTS}\\[6pt]
+    \textbf{Visualisations:}\\
+    \quad • Corner plots\\
+    \quad • Posterior distributions\\
+    \quad • Constraint contours\\[6pt]
+    \textbf{Tension Metrics:}\\
+    \quad • $R$ statistic\\
+    \quad • Information ratio $I$\\
+    \quad • Suspiciousness $S$\\
+    \quad • Bayesian model dimensionality $d_G$\\
+    \quad • Significance $\sigma$\\
+    \quad • $p$-value
+};
+
+% Arrow from anesthetic to outputs
+\draw [arrow] (anesthetic.south) -- (anesthetic.south |- outputs.north);
+
+\end{tikzpicture}
+
+\end{document}
