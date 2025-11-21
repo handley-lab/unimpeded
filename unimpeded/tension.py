@@ -1,12 +1,17 @@
+from functools import cache
+
 import numpy as np
-from scipy.stats import chi2
-from scipy.special import erfcinv
+from anesthetic.samples import NestedSamples, Samples
 from anesthetic.tension import tension_stats as anesthetic_tension_stats
-from anesthetic.samples import Samples, NestedSamples
-from functools import cache 
+from scipy.special import erfcinv
+from scipy.stats import chi2
+
 from unimpeded.database import DatabaseExplorer
 
-def tension_stats(joint, *separate, joint_f=1.0, separate_fs=None, nsamples=None, beta=None):
+
+def tension_stats(
+    joint, *separate, joint_f=1.0, separate_fs=None, nsamples=None, beta=None
+):
     r"""Compute tension statistics between two or more samples.
 
     With the Bayesian (log-)evidence ``logZ``, Kullback--Leibler divergence
@@ -84,7 +89,7 @@ def tension_stats(joint, *separate, joint_f=1.0, separate_fs=None, nsamples=None
         DataFrame containing the following tension statistics in columns:
         ['logR', 'logI', 'logS', 'd_G', 'p', 'sigma']
     """
-    columns = ['logZ', 'D_KL', 'logL_P', 'd_G']
+    columns = ["logZ", "D_KL", "logL_P", "d_G"]
 
     def get_stats(data):
         if isinstance(data, NestedSamples) and not set(columns).issubset(data.columns):
@@ -123,6 +128,7 @@ def tension_stats(joint, *separate, joint_f=1.0, separate_fs=None, nsamples=None
 
     return samples
 
+
 @cache
 def download_tension_inputs(method, model, *datasets):
     """
@@ -135,7 +141,7 @@ def download_tension_inputs(method, model, *datasets):
     """
     dbe = DatabaseExplorer()
     # The joint dataset name is a '+' separated string of the sorted dataset names.
-    joint_dataset_name = '+'.join(sorted(datasets))
+    joint_dataset_name = "+".join(sorted(datasets))
 
     print("---")
     print(f"Running Data Preparation for ({method}, {model}, {datasets})")
@@ -154,15 +160,15 @@ def download_tension_inputs(method, model, *datasets):
     print("---")
 
     # Calculate F factors for separate datasets
-    fs_separate = [info['nprior'] / info['ndiscarded'] for info in separate_prior_info]
+    fs_separate = [info["nprior"] / info["ndiscarded"] for info in separate_prior_info]
     # Calculate F factor for the joint dataset
-    f_joint = prior_info_joint['nprior'] / prior_info_joint['ndiscarded']
+    f_joint = prior_info_joint["nprior"] / prior_info_joint["ndiscarded"]
 
     return {
-        'joint': samples_joint,
-        'separate': separate_samples,
-        'joint_f': f_joint,
-        'separate_fs': fs_separate,
+        "joint": samples_joint,
+        "separate": separate_samples,
+        "joint_f": f_joint,
+        "separate_fs": fs_separate,
     }
 
 
@@ -182,8 +188,8 @@ def tension_calculator(method, model, *datasets, nsamples=None, beta=None):
     # and we don't want to alter the cached object.
     args_for_this_run = tension_args.copy()
 
-    joint_arg = args_for_this_run.pop('joint')
-    separate_arg_list = args_for_this_run.pop('separate')
+    joint_arg = args_for_this_run.pop("joint")
+    separate_arg_list = args_for_this_run.pop("separate")
 
     print("Data retrieved from cache (if not first run). Passing to tension_stats...")
     return tension_stats(
@@ -191,5 +197,5 @@ def tension_calculator(method, model, *datasets, nsamples=None, beta=None):
         *separate_arg_list,  # Unpacks the list of separate samples
         nsamples=nsamples,
         beta=beta,
-        **args_for_this_run  # Passes remaining args like joint_f, separate_fs
+        **args_for_this_run,  # Passes remaining args like joint_f, separate_fs
     )
