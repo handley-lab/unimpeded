@@ -6,8 +6,7 @@ import numpy as np
 import pytest
 from anesthetic.samples import NestedSamples
 
-from unimpeded.tension import (download_tension_inputs, tension_calculator,
-                               tension_stats)
+from unimpeded.tension import download_tension_inputs, tension_calculator, tension_stats
 
 
 class TestTensionStats:
