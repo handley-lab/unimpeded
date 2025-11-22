@@ -1,15 +1,13 @@
 """Tests for the unimpeded tension module."""
 
-import pytest
-import numpy as np
-from anesthetic.samples import NestedSamples
 from unittest.mock import MagicMock, patch
 
-from unimpeded.tension import (
-    tension_stats,
-    download_tension_inputs,
-    tension_calculator,
-)
+import numpy as np
+import pytest
+from anesthetic.samples import NestedSamples
+
+from unimpeded.tension import (download_tension_inputs, tension_calculator,
+                               tension_stats)
 
 
 class TestTensionStats:
