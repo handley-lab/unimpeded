@@ -43,6 +43,8 @@ def vcr_config():
         "serializer": "yaml",
         # Strip large CSV bodies before recording
         "before_record_response": strip_csv_response_body,
+        # Use flat cassette directory structure
+        "cassette_library_dir": "tests/cassettes",
     }
 
 
