@@ -27,16 +27,14 @@ unimpeded: Universal model comparison & parameter estimation distributed over ev
    :target: https://github.com/handley-lab/unimpeded/blob/master/LICENSE
    :alt: License information
 
-``unimpeded`` 
+``unimpeded`` is a Python package providing access to a comprehensive database of nested sampling and MCMC chains for cosmological analysis. It can be viewed as an extension to the Planck legacy archive across multiple models and datasets.
 
-It can be viewed as an extension to the Planck legacy archive across models and datasets
+The package provides:
 
-It provides mcmc and nested sampling chains, allowing parameter estimation, model comparison and tension quantification.
-
-Current functionality includes:
-
-UNDER CONSTRUCTION
-
+- **Public Nested Sampling Database**: Pre-computed chains for 8 cosmological models across 39 datasets
+- **Tension Statistics Calculator**: Six tension quantification metrics with proper nested sampling corrections
+- **Zenodo Integration**: Automated archival and retrieval with permanent DOIs
+- **Analysis Tools**: Built on anesthetic for visualization and statistical analysis
 
 Features
 --------
@@ -105,21 +103,38 @@ and view the documentation by opening ``docs/build/html/index.html`` in a browse
 Citation
 --------
 
-If you use ``unimpeded`` to generate plots for a publication, please cite
-as: ::
+If you use ``unimpeded`` in your research, please cite the following papers:
 
-   Handley, (2023) unimpeded: cosmological inference across models and datasets. 
-
-or using the BibTeX:
+**For the software and database:**
 
 .. code:: bibtex
 
-   @article{unimpeded,
-       year  = {2023},
-       author = {Will Handley},
-       title = {unimpeded: cosmological inference across models and datasets},
-       journal = {In preparation}
+   @article{Ong2025unimpeded,
+       author = {Ong, Dily Duan Yi and Handley, Will},
+       title = {unimpeded: A Public Nested Sampling Database for Bayesian Cosmology},
+       journal = {Journal of Open Source Software},
+       year = {2025},
+       note = {arXiv:2511.05470}
    }
+
+**For the tension statistics methodology:**
+
+.. code:: bibtex
+
+   @article{Ong2025tension,
+       author = {Ong, Dily Duan Yi and Handley, Will},
+       title = {Tension statistics for nested sampling},
+       journal = {arXiv e-prints},
+       year = {2025},
+       eprint = {2511.04661},
+       archivePrefix = {arXiv},
+       primaryClass = {astro-ph.CO}
+   }
+
+Links:
+
+- Software paper: `arXiv:2511.05470 <https://arxiv.org/abs/2511.05470>`__
+- Tension statistics: `arXiv:2511.04661 <https://arxiv.org/abs/2511.04661>`__
 
 
 Contributing
