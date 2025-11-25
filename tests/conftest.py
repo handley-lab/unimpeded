@@ -5,6 +5,31 @@ import os
 import pytest
 
 
+def strip_csv_response_body(response):
+    """Strip large CSV response bodies to only keep first 1000 lines."""
+    # Check if response has a body
+    if "body" not in response or "string" not in response["body"]:
+        return response
+
+    body = response["body"]["string"]
+
+    # Decode if bytes
+    if isinstance(body, bytes):
+        body = body.decode("utf-8")
+
+    # Check if body looks like CSV data (has commas and multiple lines)
+    # and is large (> 1MB)
+    if len(body) > 1_000_000 and "," in body and "\n" in body:
+        # Keep only first 1000 lines to reduce size
+        lines = body.split("\n")
+        if len(lines) > 1000:
+            lines = lines[:1000]
+            lines.append("# ... (truncated for testing)")
+            response["body"]["string"] = "\n".join(lines).encode("utf-8")
+
+    return response
+
+
 @pytest.fixture(scope="session")
 def vcr_config():
     """VCR configuration for recording HTTP interactions with Zenodo API."""
@@ -16,7 +41,10 @@ def vcr_config():
         "match_on": ["method", "scheme", "host", "port", "path"],
         # Serialization
         "serializer": "yaml",
-        # No filtering during recording - we'll filter the cassette manually after
+        # Strip large CSV bodies before recording
+        "before_record_response": strip_csv_response_body,
+        # Use flat cassette directory structure
+        "cassette_library_dir": "tests/cassettes",
     }
 
 
