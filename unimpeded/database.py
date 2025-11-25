@@ -419,9 +419,6 @@ class DatabaseCreator(Database):
                 r.raise_for_status()
                 response_data = r.json()
 
-                # Debugging: Log the response structure
-                print(f"Response structure: {response_data}")
-
                 # Process dictionary-based response with pagination
                 if isinstance(response_data, dict):
                     for hit in response_data.get("hits", {}).get("hits", []):
@@ -697,8 +694,6 @@ class DatabaseExplorer(Database):
             for file in files:
                 if file["key"] == filename:
                     download_url = file["links"]["self"]
-                    # print("Download url:", download_url)
-
                     file_r = requests.get(download_url)
                     file_r.raise_for_status()
 
