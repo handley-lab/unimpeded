@@ -98,7 +98,9 @@ jobs:
           ssh_keyscan_types: 'rsa,ecdsa,ed25519'
 
   conda-release:
-    needs: pypi-public
+    needs:
+      - pypi-public
+      - get-version
     name: Build and deploy to conda
     runs-on: ubuntu-latest
     steps:
@@ -116,7 +118,7 @@ jobs:
         run: conda install grayskull conda-build anaconda-client
       - name: Generate meta.yaml from grayskull
         shell: bash -el {0}
-        run: grayskull pypi --strict-conda-forge unimpeded
+        run: grayskull pypi --strict-conda-forge unimpeded==${{ needs.get-version.outputs.version }}
       - name: Build and upload the conda packages
         uses: uibcdf/action-build-and-upload-conda-packages@v1.2.0
         with:
