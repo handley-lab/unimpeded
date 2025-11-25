@@ -26,12 +26,21 @@ jobs:
         with:
           script: |
             const {DIST_VERSION} = process.env
-            github.rest.git.createRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: `refs/tags/${DIST_VERSION}`,
-                sha: context.sha
-            })
+            try {
+              await github.rest.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `refs/tags/${DIST_VERSION}`,
+                  sha: context.sha
+              })
+              console.log(`Created tag ${DIST_VERSION}`)
+            } catch (error) {
+              if (error.status === 422) {
+                console.log(`Tag ${DIST_VERSION} already exists, skipping tag creation`)
+              } else {
+                throw error
+              }
+            }
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
@@ -39,6 +48,8 @@ jobs:
           tag: "${{ env.DIST_VERSION }}"
           generateReleaseNotes: true
           token: ${{ secrets.GITHUB_TOKEN }}
+          allowUpdates: true
+          skipIfReleaseExists: true
 
   pypi-release:
     runs-on: ubuntu-latest
@@ -56,6 +67,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
 
   pypi-public:
     needs: 
