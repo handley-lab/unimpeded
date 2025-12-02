@@ -45,7 +45,7 @@ class TestTensionStats:
         result = tension_stats(joint, separate_A, separate_B)
 
         # Check that all expected columns are present
-        expected_columns = ["logR", "logI", "logS", "d_G", "p", "sigma"]
+        expected_columns = ["logR", "I", "logS", "d_G", "p", "sigma"]
         assert all(col in result.columns for col in expected_columns)
 
         # Check that result is not empty
@@ -87,9 +87,9 @@ class TestTensionStats:
             separate_fs=[1.1, 1.15],
         )
 
-        # Check that correction factors are applied (logR and logI should be affected)
+        # Check that correction factors are applied (logR and I should be affected)
         assert "logR" in result.columns
-        assert "logI" in result.columns
+        assert "I" in result.columns
 
     def test_tension_stats_separate_fs_mismatch(self):
         """Test that mismatched separate_fs raises ValueError."""
@@ -205,7 +205,7 @@ class TestTensionCalculator:
         )
 
         # Check that result contains expected columns
-        expected_columns = ["logR", "logI", "logS", "d_G", "p", "sigma"]
+        expected_columns = ["logR", "I", "logS", "d_G", "p", "sigma"]
         assert all(col in result.columns for col in expected_columns)
 
         # Check that result is not empty

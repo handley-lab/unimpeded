@@ -25,10 +25,10 @@ def tension_stats(
       .. math::
         \log R = \log Z_{AB} - \log Z_{A} - \log Z_{B}
 
-    - ``logI``: information ratio
+    - ``I``: mutual information estimate between data and params
 
       .. math::
-        \log I = D_{KL}^{A} + D_{KL}^{B} - D_{KL}^{AB}
+        \mathcal{I} = D_{KL}^{A} + D_{KL}^{B} - D_{KL}^{AB}
 
     - ``logS``: suspiciousness
 
@@ -87,7 +87,7 @@ def tension_stats(
     -------
     samples : :class:`anesthetic.samples.Samples`
         DataFrame containing the following tension statistics in columns:
-        ['logR', 'logI', 'logS', 'd_G', 'p', 'sigma']
+        ['logR', 'I', 'logS', 'd_G', 'p', 'sigma']
     """
     columns = ["logZ", "D_KL", "logL_P", "d_G"]
 
@@ -116,7 +116,7 @@ def tension_stats(
 
     # Apply the corrections
     samples["logR"] += log_F_correction
-    samples["logI"] += log_F_correction
+    samples["I"] += log_F_correction
 
     # The p-value and tension calculations from the second snippet
     p = chi2.sf(samples["d_G"] - 2 * samples["logS"], df=samples["d_G"])
