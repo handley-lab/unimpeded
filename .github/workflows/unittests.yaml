@@ -21,8 +21,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e ".[test]"
-          # TEMPORARY: Install anesthetic from tension branch until PR #333 is merged
-          pip install --force-reinstall git+https://github.com/handley-lab/anesthetic.git@tension
 
       - name: Test with pytest
         run: pytest --cov=unimpeded tests
