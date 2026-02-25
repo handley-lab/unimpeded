@@ -7,6 +7,8 @@ import requests
 import yaml
 from anesthetic import read_chains, read_csv
 
+from ._version import __version__
+
 
 class Database:
     """
@@ -43,7 +45,7 @@ class Database:
         models = set()
         datasets = set()
         page = 1
-        size = 1000  # Maximum results per page
+        size = 25  # Maximum results per page
 
         try:
             while True:
@@ -52,8 +54,13 @@ class Database:
                     "size": size,
                     "page": page,
                 }
+                headers = {
+                    "User-Agent": f"unimpeded/{__version__}",
+                }
 
-                response = requests.get(self.records_url, params=params)
+                response = requests.get(
+                    self.records_url, params=params, headers=headers
+                )
                 response.raise_for_status()
                 data = response.json()
 
@@ -260,7 +267,10 @@ class DatabaseCreator(Database):
             Response: The requests response object after uploading.
         """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
-        r = requests.get(deposit_url)
+        headers = {
+            "User-Agent": f"unimpeded/{__version__}",
+        }
+        r = requests.get(deposit_url, headers=headers)
         r.raise_for_status()
         bucket_url = r.json().get("links", {}).get("bucket")
         params = {"access_token": self.ACCESS_TOKEN}
@@ -319,7 +329,10 @@ class DatabaseCreator(Database):
             Response: The requests response object after uploading.
         """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
-        r = requests.get(deposit_url)
+        headers = {
+            "User-Agent": f"unimpeded/{__version__}",
+        }
+        r = requests.get(deposit_url, headers=headers)
         r.raise_for_status()
         bucket_url = r.json().get("links", {}).get("bucket")
         params = {"access_token": self.ACCESS_TOKEN}
@@ -372,7 +385,10 @@ class DatabaseCreator(Database):
             Response: The requests response object after uploading.
         """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
-        r = requests.get(deposit_url)
+        headers = {
+            "User-Agent": f"unimpeded/{__version__}",
+        }
+        r = requests.get(deposit_url, headers=headers)
         r.raise_for_status()
         bucket_url = r.json().get("links", {}).get("bucket")
         params = {"access_token": self.ACCESS_TOKEN}
@@ -414,8 +430,15 @@ class DatabaseCreator(Database):
 
         try:
             while url:
+                headers = {
+                    "User-Agent": f"unimpeded/{__version__}",
+                }
                 # Fetch the data
-                r = requests.get(url, params=params if url == self.base_url else None)
+                r = requests.get(
+                    url,
+                    params=params if url == self.base_url else None,
+                    headers=headers,
+                )
                 r.raise_for_status()
                 response_data = r.json()
 
@@ -482,10 +505,15 @@ class DatabaseCreator(Database):
 
         for deposit_id in deposit_ids:
             try:
+                headers = {
+                    "User-Agent": f"unimpeded/{__version__}",
+                }
                 # Check if the deposit exists
                 check_url = f"{self.base_url}/{deposit_id}"
                 check_response = requests.get(
-                    check_url, params={"access_token": self.ACCESS_TOKEN}
+                    check_url,
+                    params={"access_token": self.ACCESS_TOKEN},
+                    headers=headers,
                 )
 
                 if check_response.status_code == 404:
@@ -535,8 +563,13 @@ class DatabaseCreator(Database):
         """
         metadata_url = f"{self.base_url}/{deposit_id}"
         try:
+            headers = {
+                "User-Agent": f"unimpeded/{__version__}",
+            }
             response = requests.get(
-                metadata_url, params={"access_token": self.ACCESS_TOKEN}
+                metadata_url,
+                params={"access_token": self.ACCESS_TOKEN},
+                headers=headers,
             )
             response.raise_for_status()
             deposit_data = response.json()
@@ -599,7 +632,10 @@ class DatabaseCreator(Database):
             deposit_url = (
                 f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
             )
-            r = requests.get(deposit_url)
+            headers = {
+                "User-Agent": f"unimpeded/{__version__}",
+            }
+            r = requests.get(deposit_url, headers=headers)
             r.raise_for_status()
             deposit_data = r.json()
 
@@ -684,7 +720,10 @@ class DatabaseExplorer(Database):
                                       a DataFrame for NS and MCMC chains, a dict for info and prior_info.
         """
         deposit_url = f"{self.records_url}/{deposit_id}"
-        r = requests.get(deposit_url)
+        headers = {
+            "User-Agent": f"unimpeded/{__version__}",
+        }
+        r = requests.get(deposit_url, headers=headers)
         r.raise_for_status()
 
         if r.status_code == 200:
@@ -694,7 +733,10 @@ class DatabaseExplorer(Database):
             for file in files:
                 if file["key"] == filename:
                     download_url = file["links"]["self"]
-                    file_r = requests.get(download_url)
+                    headers = {
+                        "User-Agent": f"unimpeded/{__version__}",
+                    }
+                    file_r = requests.get(download_url, headers=headers)
                     file_r.raise_for_status()
 
                     if file_r.status_code == 200:
@@ -796,7 +838,10 @@ class DatabaseExplorer(Database):
         }
 
         try:
-            response = requests.get(self.records_url, params=params)
+            headers = {
+                "User-Agent": f"unimpeded/{__version__}",
+            }
+            response = requests.get(self.records_url, params=params, headers=headers)
             response.raise_for_status()
             data = response.json()
 
