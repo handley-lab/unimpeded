@@ -1,40 +1,12 @@
 Installation
 ============
 
-``unimpeded`` can be installed in several ways depending on your use case.
-
-Quick Install
--------------
-
-For most users, a simple pip install is sufficient:
-
-.. code:: bash
-
-    pip install unimpeded
-
-Installation from Source
--------------------------
-
-To install the latest development version from GitHub:
-
-.. code:: bash
-
-    git clone https://github.com/handley-lab/unimpeded.git
-    cd unimpeded
-    python -m pip install .
-
-For an editable installation (useful for development):
-
-.. code:: bash
-
-    git clone https://github.com/handley-lab/unimpeded.git
-    cd unimpeded
-    pip install -e .
-
 Using Virtual Environments
 ---------------------------
 
-It is strongly recommended to install ``unimpeded`` in a virtual environment to avoid package conflicts and maintain reproducibility.
+It is **strongly recommended** to install ``unimpeded`` in a virtual environment to avoid package conflicts and maintain reproducibility.
+
+Virtual environments provide isolated Python environments for your projects, ensuring that dependencies for different projects don't interfere with each other. This is considered best practice in Python development.
 
 Python venv
 ~~~~~~~~~~~
@@ -71,6 +43,36 @@ Conda
 
     # Or install via pip
     pip install unimpeded
+
+Quick Install
+-------------
+
+If you prefer not to use a virtual environment, you can install ``unimpeded`` directly:
+
+.. code:: bash
+
+    pip install unimpeded
+
+**Note:** While this method works, using a virtual environment is strongly recommended for better package management and reproducibility.
+
+Installation from Source
+-------------------------
+
+To install the latest development version from GitHub:
+
+.. code:: bash
+
+    git clone https://github.com/handley-lab/unimpeded.git
+    cd unimpeded
+    python -m pip install .
+
+For an editable installation (useful for development):
+
+.. code:: bash
+
+    git clone https://github.com/handley-lab/unimpeded.git
+    cd unimpeded
+    pip install -e .
 
 Jupyter Notebook Setup
 ----------------------
