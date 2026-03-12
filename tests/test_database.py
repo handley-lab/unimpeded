@@ -41,31 +41,64 @@ class TestDatabase:
         assert all(data in db.datasets for data in expected_data)
 
     @pytest.mark.vcr
-    def test_get_available_models_and_datasets(self):
-        """Test fetching available models and datasets from Zenodo."""
+    def test_combinations(self):
+        """Test fetching available combinations from Zenodo."""
         db = Database(sandbox=False)
-        available = db.get_available_models_and_datasets()
 
-        # Check structure
-        assert "models" in available
-        assert "datasets" in available
-        assert isinstance(available["models"], list)
-        assert isinstance(available["datasets"], list)
+        # Check combinations is a set of tuples
+        assert isinstance(db.combinations, set)
+        assert all(isinstance(c, tuple) and len(c) == 2 for c in db.combinations)
 
-        # Check that lists are sorted
-        assert available["models"] == sorted(available["models"])
-        assert available["datasets"] == sorted(available["datasets"])
+        # Check that models and datasets are derived correctly
+        assert isinstance(db.models, list)
+        assert isinstance(db.datasets, list)
+        assert db.models == sorted(db.models)
+        assert db.datasets == sorted(db.datasets)
 
-        # Check that common models/datasets exist (if any deposits are published)
-        if available["models"]:
-            # Models should be strings
-            assert all(isinstance(model, str) for model in available["models"])
+        # Check that all models/datasets in combinations appear in the properties
+        for model, dataset in db.combinations:
+            assert model in db.models
+            assert dataset in db.datasets
 
-        if available["datasets"]:
-            # Datasets should be strings
-            assert all(isinstance(dataset, str) for dataset in available["datasets"])
+    @pytest.mark.vcr
+    def test_datasets_for(self):
+        """Test looking up datasets for a given model."""
+        db = Database(sandbox=False)
+        if db.models:
+            model = db.models[0]
+            result = db.datasets_for(model)
+            assert isinstance(result, list)
+            assert result == sorted(result)
+            assert all((model, d) in db.combinations for d in result)
 
-    def test_get_available_models_and_datasets_empty(self):
+        # Non-existent model returns empty list
+        assert db.datasets_for("nonexistent_model") == []
+
+    @pytest.mark.vcr
+    def test_models_for(self):
+        """Test looking up models for a given dataset."""
+        db = Database(sandbox=False)
+        if db.datasets:
+            dataset = db.datasets[0]
+            result = db.models_for(dataset)
+            assert isinstance(result, list)
+            assert result == sorted(result)
+            assert all((m, dataset) in db.combinations for m in result)
+
+        # Non-existent dataset returns empty list
+        assert db.models_for("nonexistent_dataset") == []
+
+    @pytest.mark.vcr
+    def test_is_available(self):
+        """Test checking whether a model-dataset combination exists."""
+        db = Database(sandbox=False)
+        if db.combinations:
+            model, dataset = next(iter(db.combinations))
+            assert db.is_available(model, dataset) is True
+
+        assert db.is_available("nonexistent_model", "nonexistent_dataset") is False
+
+    def test_combinations_empty(self):
         """Test handling when no unimpeded deposits exist."""
         with patch("requests.get") as mock_get:
             # Mock empty response
@@ -75,13 +108,13 @@ class TestDatabase:
             mock_get.return_value = mock_response
 
             db = Database(sandbox=True)
-            available = db.get_available_models_and_datasets()
 
-            assert available["models"] == []
-            assert available["datasets"] == []
+            assert db.combinations == set()
+            assert db.models == []
+            assert db.datasets == []
 
-    def test_get_available_models_and_datasets_handles_errors(self):
-        """Test error handling in get_available_models_and_datasets."""
+    def test_fetch_combinations_handles_errors(self):
+        """Test error handling in _fetch_combinations."""
         import requests
 
         with patch("requests.get") as mock_get:
@@ -96,14 +129,14 @@ class TestDatabase:
             sys.stdout = captured_output
 
             db = Database(sandbox=True)
-            available = db.get_available_models_and_datasets()
 
             # Restore stdout
             sys.stdout = sys.__stdout__
 
-            # Should return empty lists on error
-            assert available["models"] == []
-            assert available["datasets"] == []
+            # Should return empty set on error
+            assert db.combinations == set()
+            assert db.models == []
+            assert db.datasets == []
 
             # Verify error was printed
             output = captured_output.getvalue()

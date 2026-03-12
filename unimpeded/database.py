@@ -26,24 +26,62 @@ class Database:
         else:
             self.records_url = "https://zenodo.org/api/records"
 
-        # Fetch available models and datasets from Zenodo
-        available = self.get_available_models_and_datasets()
-        self.models = available["models"]
-        self.datasets = available["datasets"]
+        # Fetch available combinations from Zenodo
+        self.combinations = self._fetch_combinations()
 
-    def get_available_models_and_datasets(self):
-        """
-        Search all unimpeded deposits on Zenodo and extract unique models and datasets.
+    @property
+    def models(self):
+        """Sorted list of all unique model names available on Zenodo."""
+        return sorted({model for model, _ in self.combinations})
+
+    @property
+    def datasets(self):
+        """Sorted list of all unique dataset names available on Zenodo."""
+        return sorted({dataset for _, dataset in self.combinations})
+
+    def datasets_for(self, model):
+        """Return a sorted list of datasets available for a given model.
+
+        Args:
+            model (str): The cosmological model name (e.g. 'lcdm').
 
         Returns:
-            dict: A dictionary with two keys:
-                - 'models': A sorted list of unique model names.
-                - 'datasets': A sorted list of unique dataset names.
+            list: A sorted list of dataset names available for the model.
         """
-        models = set()
-        datasets = set()
+        return sorted({dataset for m, dataset in self.combinations if m == model})
+
+    def models_for(self, dataset):
+        """Return a sorted list of models available for a given dataset.
+
+        Args:
+            dataset (str): The dataset identifier (e.g. 'planck_2018_plik').
+
+        Returns:
+            list: A sorted list of model names available for the dataset.
+        """
+        return sorted({model for model, d in self.combinations if d == dataset})
+
+    def is_available(self, model, dataset):
+        """Check whether a specific model-dataset combination exists on Zenodo.
+
+        Args:
+            model (str): The cosmological model name.
+            dataset (str): The dataset identifier.
+
+        Returns:
+            bool: True if the combination exists, False otherwise.
+        """
+        return (model, dataset) in self.combinations
+
+    def _fetch_combinations(self):
+        """Search all unimpeded deposits on Zenodo and extract model-dataset combinations.
+
+        Returns:
+            set: A set of (model, dataset) tuples representing available combinations.
+        """
+        combinations = set()
         page = 1
-        size = 1000  # Maximum results per page
+        size = 25  # Maximum results per page allowed by Zenodo API
 
         try:
             while True:
@@ -69,9 +107,7 @@ class Database:
                             title.replace("unimpeded: ", "").strip().split(maxsplit=1)
                         )
                         if len(parts) == 2:
-                            model, dataset = parts
-                            models.add(model)
-                            datasets.add(dataset)
+                            combinations.add((parts[0], parts[1]))
 
                 # Check if there are more pages
                 total = data.get("hits", {}).get("total", 0)
@@ -82,7 +118,7 @@ class Database:
         except requests.RequestException as e:
             print(f"Error fetching deposits: {e}")
 
-        return {"models": sorted(list(models)), "datasets": sorted(list(datasets))}
+        return combinations
 
     def get_filename(self, method, model, dataset, filestype):
         """
