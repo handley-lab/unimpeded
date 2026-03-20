@@ -127,7 +127,9 @@ jobs:
           channels: conda-forge,handley-lab
       - name: install dependencies
         shell: bash -el {0}
-        run: conda install grayskull conda-build anaconda-client setuptools
+        run: |
+          conda install conda-build anaconda-client
+          pip install grayskull
       - name: Generate meta.yaml from grayskull
         shell: bash -el {0}
         run: grayskull pypi --strict-conda-forge unimpeded==${{ needs.get-version.outputs.version }}
