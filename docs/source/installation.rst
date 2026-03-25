@@ -74,10 +74,52 @@ For an editable installation (useful for development):
     cd unimpeded
     pip install -e .
 
-Jupyter Notebook Setup
-----------------------
+Jupyter Notebook Tutorial
+-------------------------
 
-For users who want to use the tutorial Jupyter notebook, please refer to `JUPYTER_SETUP.md <https://github.com/handley-lab/unimpeded/blob/master/JUPYTER_SETUP.md>`_ in the repository for comprehensive setup instructions including platform-specific guidance.
+A tutorial notebook is available to help you get started. After installing ``unimpeded``, download the notebook:
+
+.. code:: bash
+
+    download-unimpeded-tutorial
+
+Then install Jupyter and launch the notebook:
+
+.. code:: bash
+
+    pip install jupyter
+    launch-unimpeded-tutorial
+
+Troubleshooting
+~~~~~~~~~~~~~~~
+
+``jupyter: command not found``
+    Make sure you've installed jupyter:
+
+    .. code:: bash
+
+        pip install jupyter
+
+``ModuleNotFoundError: No module named 'unimpeded'``
+    Make sure you've installed unimpeded in your active virtual environment:
+
+    .. code:: bash
+
+        pip install unimpeded
+
+Old pip version causing installation errors
+    Upgrade pip first:
+
+    .. code:: bash
+
+        python -m pip install --upgrade pip
+
+Windows: Cannot run scripts (PowerShell execution policy)
+    Enable script execution temporarily:
+
+    .. code:: powershell
+
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 
 Dependencies
 ------------

@@ -33,6 +33,10 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Mathematics",
 ]
 
+[project.scripts]
+download-unimpeded-tutorial = "unimpeded.cli:download_unimpeded_tutorial"
+launch-unimpeded-tutorial = "unimpeded.cli:launch_unimpeded_tutorial"
+
 [project.urls]
 "Homepage" = "https://github.com/handley-lab/unimpeded"
 "Bug Tracker" = "https://github.com/handley-lab/unimpeded/issues"
