@@ -16,6 +16,12 @@ FILENAME = "unimpeded_tutorial.ipynb"
 
 def download_unimpeded_tutorial():
     """Download the unimpeded tutorial notebook to the current directory."""
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("Usage: download-unimpeded-tutorial\n\n"
+              "Download the unimpeded tutorial notebook to the current "
+              "directory.")
+        return
+
     if os.path.exists(FILENAME):
         print(f"'{FILENAME}' already exists in the current directory.")
         response = input("Overwrite? [y/N] ").strip().lower()
@@ -39,6 +45,11 @@ def download_unimpeded_tutorial():
 
 def launch_unimpeded_tutorial():
     """Launch the tutorial notebook in the browser."""
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("Usage: launch-unimpeded-tutorial\n\n"
+              "Launch the unimpeded tutorial notebook in Jupyter.")
+        return
+
     if not os.path.exists(FILENAME):
         print(
             f"'{FILENAME}' not found in the current directory.\n"
