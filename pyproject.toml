@@ -46,6 +46,9 @@ launch-unimpeded-tutorial = "unimpeded.cli:launch_unimpeded_tutorial"
 docs = ["sphinx", "sphinx_rtd_theme", "numpydoc"]
 test = ["pytest", "pytest-cov", "flake8", "pydocstyle", "packaging", "pre-commit", "pytest-recording"]
 
+[tool.setuptools.packages.find]
+include = ["unimpeded*"]
+
 [tool.setuptools.dynamic]
 version = {attr = "unimpeded._version.__version__"}
 
