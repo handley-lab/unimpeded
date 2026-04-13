@@ -112,7 +112,7 @@ If you use ``unimpeded`` in your research, please cite the following papers:
    @article{Ong2025unimpeded,
        author = {Ong, Dily Duan Yi and Handley, Will},
        title = {unimpeded: A Public Nested Sampling Database for Bayesian Cosmology},
-       journal = {Journal of Open Source Software},
+       journal = {arXiv e-prints},
        year = {2025},
        note = {arXiv:2511.05470}
    }
