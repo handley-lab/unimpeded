@@ -17,9 +17,11 @@ FILENAME = "unimpeded_tutorial.ipynb"
 def download_unimpeded_tutorial():
     """Download the unimpeded tutorial notebook to the current directory."""
     if "--help" in sys.argv or "-h" in sys.argv:
-        print("Usage: download-unimpeded-tutorial\n\n"
-              "Download the unimpeded tutorial notebook to the current "
-              "directory.")
+        print(
+            "Usage: download-unimpeded-tutorial\n\n"
+            "Download the unimpeded tutorial notebook to the current "
+            "directory."
+        )
         return
 
     if os.path.exists(FILENAME):
@@ -46,8 +48,10 @@ def download_unimpeded_tutorial():
 def launch_unimpeded_tutorial():
     """Launch the tutorial notebook in the browser."""
     if "--help" in sys.argv or "-h" in sys.argv:
-        print("Usage: launch-unimpeded-tutorial\n\n"
-              "Launch the unimpeded tutorial notebook in Jupyter.")
+        print(
+            "Usage: launch-unimpeded-tutorial\n\n"
+            "Launch the unimpeded tutorial notebook in Jupyter."
+        )
         return
 
     if not os.path.exists(FILENAME):

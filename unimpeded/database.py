@@ -398,7 +398,9 @@ class DatabaseCreator(Database):
             path = f"/Users/ongdily/Documents/Cambridge/project2/codes/{grid}/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info"
         return path
 
-    def upload_prior_info(self, deposit_id, method, model, dataset, loc, grid="new_grid"):
+    def upload_prior_info(
+        self, deposit_id, method, model, dataset, loc, grid="new_grid"
+    ):
         """
         Upload the PRIOR_INFO file to a Zenodo deposit.
 
@@ -420,7 +422,9 @@ class DatabaseCreator(Database):
         params = {"access_token": self.ACCESS_TOKEN}
 
         filename = self.get_filename(method, model, dataset, filestype="prior_info")
-        prior_info_file_path = self.get_prior_info_path(method, model, dataset, loc, grid=grid)
+        prior_info_file_path = self.get_prior_info_path(
+            method, model, dataset, loc, grid=grid
+        )
         with open(prior_info_file_path, "rb") as fp:
             r = requests.put(f"{bucket_url}/{filename}", data=fp, params=params)
             r.raise_for_status()
