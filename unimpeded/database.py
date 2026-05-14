@@ -433,13 +433,13 @@ class DatabaseCreator(Database):
 
         return r
 
-    def get_deposit_ids_by_title(self, title, size=1000):
+    def get_deposit_ids_by_title(self, title, size=25):
         """
         Search and retrieve deposit IDs that match a given title from Zenodo. Can search for both published and unpublished deposits.
 
         Args:
             title (str): The deposit title to search for.
-            size (int, optional): Maximum number of deposit results to retrieve. Defaults to 1000.
+            size (int, optional): Page size for the Zenodo deposit listing endpoint. Pagination is followed automatically via the response's `next` link, so the total number of results is not limited by this value. Zenodo's deposit API rejects size > 25 with a 400 validation error, so the default is 25.
 
         Returns:
             dict: A dictionary with two keys 'published' and 'unpublished' containing lists of published and unpublished deposit IDs respectively.
