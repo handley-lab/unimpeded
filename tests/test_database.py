@@ -357,3 +357,328 @@ def test_filename_generation_parametrized(sampler, model, dataset, file_type):
         expected_filename = f"{sampler}_{model}_{dataset}.prior_info"
 
     assert filename == expected_filename
+
+
+@pytest.fixture
+def mock_creator(monkeypatch):
+    """DatabaseCreator with HTTP-free __init__ for mock-based tests."""
+    monkeypatch.setattr(
+        "unimpeded.database.Database._fetch_combinations", lambda self: set()
+    )
+    return DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+
+
+class TestGridKwarg:
+    """Tests for the `grid` kwarg added to upload methods and path helpers."""
+
+    @pytest.mark.vcr
+    def test_get_yaml_path_hpc_default_grid(self):
+        """Default grid='new_grid' for loc='hpc' yields a /new_grid/ path."""
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        path = creator.get_yaml_path("ns", "lcdm", "bao.sdss_dr16", "hpc")
+        assert "/new_grid/ns/lcdm/bao.sdss_dr16/" in path
+        assert path.endswith("bao.sdss_dr16.updated.yaml")
+
+    @pytest.mark.vcr
+    def test_get_yaml_path_hpc_old_grid(self):
+        """Passing grid='grid' selects the old-paper layout."""
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        path = creator.get_yaml_path("ns", "lcdm", "bao.sdss_dr16", "hpc", grid="grid")
+        assert "/grid/ns/lcdm/" in path
+        assert "/new_grid/" not in path
+
+    @pytest.mark.vcr
+    def test_get_yaml_path_local_default_grid(self):
+        """loc='local' also honours the grid kwarg in its hardcoded local root."""
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        path = creator.get_yaml_path("mcmc", "wlcdm", "sn.pantheon", "local")
+        assert "/new_grid/mcmc/wlcdm/sn.pantheon/" in path
+        assert path.endswith("sn.pantheon.updated.yaml")
+
+    @pytest.mark.vcr
+    def test_get_prior_info_path_hpc_default_grid(self):
+        """Default grid='new_grid' on get_prior_info_path yields a /new_grid/ path."""
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        path = creator.get_prior_info_path("ns", "lcdm", "bao.sdss_dr16", "hpc")
+        assert "/new_grid/ns/lcdm/bao.sdss_dr16/" in path
+        assert "_polychord_raw/" in path
+        assert path.endswith(".prior_info")
+
+    @pytest.mark.vcr
+    def test_get_prior_info_path_hpc_old_grid(self):
+        """Old grid selects /grid/ path for prior_info."""
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        path = creator.get_prior_info_path(
+            "ns", "lcdm", "bao.sdss_dr16", "hpc", grid="grid"
+        )
+        assert "/grid/ns/" in path
+        assert "/new_grid/" not in path
+
+    @pytest.mark.vcr
+    def test_get_prior_info_path_local(self):
+        """loc='local' on get_prior_info_path honours grid kwarg."""
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        path = creator.get_prior_info_path("ns", "lcdm", "bao.sdss_dr16", "local")
+        assert "/new_grid/ns/" in path
+
+    @pytest.mark.vcr
+    @patch("unimpeded.database.read_chains")
+    def test_get_samples_ns_hpc_forwards_grid(self, mock_read):
+        """get_samples passes a /new_grid/ path with _polychord_raw to read_chains for NS."""
+        mock_read.return_value = MagicMock()
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        creator.get_samples("ns", "lcdm", "bao.sdss_dr16", "hpc", grid="new_grid")
+        called_path = mock_read.call_args[0][0]
+        assert "/new_grid/ns/lcdm/bao.sdss_dr16/" in called_path
+        assert "_polychord_raw" in called_path
+
+    @pytest.mark.vcr
+    @patch("unimpeded.database.read_chains")
+    def test_get_samples_ns_hpc_old_grid(self, mock_read):
+        """get_samples honours grid='grid' (old paper)."""
+        mock_read.return_value = MagicMock()
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        creator.get_samples("ns", "lcdm", "bao.sdss_dr16", "hpc", grid="grid")
+        called_path = mock_read.call_args[0][0]
+        assert "/grid/ns/" in called_path
+
+    @pytest.mark.vcr
+    @patch("unimpeded.database.read_chains")
+    def test_get_samples_mcmc_hpc(self, mock_read):
+        """MCMC paths have a different layout: no _polychord_raw subfolder."""
+        mock_read.return_value = MagicMock()
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        creator.get_samples("mcmc", "lcdm", "bao.sdss_dr16", "hpc", grid="new_grid")
+        called_path = mock_read.call_args[0][0]
+        assert "/new_grid/mcmc/lcdm/bao.sdss_dr16/" in called_path
+        assert "polychord_raw" not in called_path
+
+
+class TestGetDepositIdsByTitlePagination:
+    """Tests for the paginated retrieval of deposit IDs.
+
+    Uses mocks (not VCR) so we can simulate edge cases like empty pages,
+    partial pages, and the dict-shaped response form without recording
+    real Zenodo interactions.
+    """
+
+    @staticmethod
+    def _make_resp(items):
+        r = MagicMock()
+        r.raise_for_status = MagicMock()
+        r.json = MagicMock(return_value=items)
+        return r
+
+    @patch("unimpeded.database.requests.get")
+    def test_paginates_until_empty_page(self, mock_get, mock_creator):
+        """Two full pages of 25 followed by an empty page should stop after 3 calls."""
+        page1 = [{"id": i, "submitted": True} for i in range(1, 26)]
+        page2 = [{"id": i, "submitted": False} for i in range(26, 51)]
+        page3_empty = []
+        mock_get.side_effect = [
+            self._make_resp(page1),
+            self._make_resp(page2),
+            self._make_resp(page3_empty),
+        ]
+
+        ids = mock_creator.get_deposit_ids_by_title("unimpeded")
+
+        assert len(ids["published"]) == 25
+        assert len(ids["unpublished"]) == 25
+        assert mock_get.call_count == 3
+        pages_used = [call.kwargs["params"]["page"] for call in mock_get.call_args_list]
+        assert pages_used == [1, 2, 3]
+
+    @patch("unimpeded.database.requests.get")
+    def test_stops_on_partial_page(self, mock_get, mock_creator):
+        """A partial last page (fewer than size) ends iteration without an extra call."""
+        page1 = [{"id": i, "submitted": True} for i in range(1, 26)]
+        page2_partial = [{"id": i, "submitted": False} for i in range(26, 36)]
+        mock_get.side_effect = [
+            self._make_resp(page1),
+            self._make_resp(page2_partial),
+        ]
+
+        ids = mock_creator.get_deposit_ids_by_title("unimpeded")
+
+        assert len(ids["published"]) == 25
+        assert len(ids["unpublished"]) == 10
+        assert mock_get.call_count == 2
+
+    @patch("unimpeded.database.requests.get")
+    def test_default_size_is_25(self, mock_get, mock_creator):
+        """Default page size should be 25 (Zenodo's deposit API cap)."""
+        mock_get.side_effect = [self._make_resp([])]
+        mock_creator.get_deposit_ids_by_title("unimpeded")
+        assert mock_get.call_args.kwargs["params"]["size"] == 25
+
+    @patch("unimpeded.database.requests.get")
+    def test_dict_shaped_response(self, mock_get, mock_creator):
+        """Should also accept dict {'hits': {'hits': [...]}} responses."""
+        hits = [{"id": i, "submitted": True} for i in range(1, 6)]
+        dict_resp = {"hits": {"hits": hits}}
+        r = MagicMock()
+        r.raise_for_status = MagicMock()
+        r.json = MagicMock(return_value=dict_resp)
+        mock_get.side_effect = [r]
+
+        ids = mock_creator.get_deposit_ids_by_title("unimpeded")
+
+        assert len(ids["published"]) == 5
+        assert mock_get.call_count == 1  # 5 < size=25 => stops after first page
+
+
+class TestPublishReturnValue:
+    """Tests for the success/failure bool now returned by publish()."""
+
+    @patch("unimpeded.database.requests.post")
+    def test_publish_returns_true_on_success(self, mock_post, mock_creator):
+        """publish() returns True on a 2xx response."""
+        ok_resp = MagicMock()
+        ok_resp.raise_for_status = MagicMock()
+        ok_resp.json = MagicMock(return_value={"conceptdoi": "10.5281/zenodo.1"})
+        ok_resp.status_code = 202
+        mock_post.return_value = ok_resp
+
+        result = mock_creator.publish(12345, {"title": "unimpeded: lcdm bao.sdss_dr16"})
+        assert result is True
+
+    @patch("unimpeded.database.requests.post")
+    def test_publish_returns_false_on_http_error(self, mock_post, mock_creator):
+        """publish() returns False on a 4xx/5xx response."""
+        import requests as _requests
+
+        fail_resp = MagicMock()
+        fail_resp.status_code = 400
+        http_err = _requests.exceptions.HTTPError("400 Bad Request")
+        fail_resp.raise_for_status = MagicMock(side_effect=http_err)
+        mock_post.return_value = fail_resp
+
+        result = mock_creator.publish(12345, {"title": "unimpeded: lcdm bao.sdss_dr16"})
+        assert result is False
+
+    @patch("unimpeded.database.requests.post")
+    def test_publish_returns_false_on_generic_error(self, mock_post, mock_creator):
+        """publish() returns False on any non-HTTP exception (e.g. connection)."""
+        mock_post.side_effect = RuntimeError("connection exploded")
+        result = mock_creator.publish(12345, {"title": "unimpeded: lcdm bao.sdss_dr16"})
+        assert result is False
+
+
+class TestUploadMethodsForwardGrid:
+    """Tests that upload_samples / upload_yaml / upload_prior_info pass
+    the grid kwarg through to their respective path helpers."""
+
+    @patch("unimpeded.database.os.remove")
+    @patch("unimpeded.database.read_chains")
+    @patch("unimpeded.database.requests.put")
+    @patch("unimpeded.database.requests.get")
+    def test_upload_samples_uses_grid_in_path(
+        self,
+        mock_get,
+        mock_put,
+        mock_read,
+        mock_rm,
+        mock_creator,
+        tmp_path,
+        monkeypatch,
+    ):
+        """upload_samples reads chains from a path containing the grid name."""
+        monkeypatch.chdir(tmp_path)
+
+        get_resp = MagicMock()
+        get_resp.raise_for_status = MagicMock()
+        get_resp.json = MagicMock(return_value={"links": {"bucket": "http://bucket"}})
+        mock_get.return_value = get_resp
+
+        put_resp = MagicMock()
+        put_resp.raise_for_status = MagicMock()
+        put_resp.status_code = 201
+        mock_put.return_value = put_resp
+
+        samples = MagicMock()
+
+        def fake_to_csv(filename):
+            (tmp_path / filename).write_text("dummy,csv\n1,2\n")
+
+        samples.to_csv = fake_to_csv
+        mock_read.return_value = samples
+
+        mock_creator.upload_samples(
+            12345, "ns", "lcdm", "bao.sdss_dr16", "hpc", grid="new_grid"
+        )
+
+        called_path = mock_read.call_args[0][0]
+        assert "/new_grid/ns/lcdm/bao.sdss_dr16/" in called_path
+
+    @patch("unimpeded.database.requests.put")
+    @patch("unimpeded.database.requests.get")
+    def test_upload_yaml_uses_grid_in_path(
+        self, mock_get, mock_put, mock_creator, tmp_path, monkeypatch
+    ):
+        """upload_yaml opens the yaml file at a path containing the grid name."""
+        yaml_file = tmp_path / "fake.updated.yaml"
+        yaml_file.write_text("dummy: 1\n")
+
+        captured = {}
+        original = mock_creator.get_yaml_path
+
+        def patched(method, model, dataset, loc, grid="new_grid"):
+            captured["grid"] = grid
+            captured["path"] = original(method, model, dataset, loc, grid=grid)
+            return str(yaml_file)
+
+        monkeypatch.setattr(mock_creator, "get_yaml_path", patched)
+
+        get_resp = MagicMock()
+        get_resp.raise_for_status = MagicMock()
+        get_resp.json = MagicMock(return_value={"links": {"bucket": "http://bucket"}})
+        mock_get.return_value = get_resp
+
+        put_resp = MagicMock()
+        put_resp.raise_for_status = MagicMock()
+        put_resp.status_code = 201
+        mock_put.return_value = put_resp
+
+        mock_creator.upload_yaml(
+            12345, "ns", "lcdm", "bao.sdss_dr16", "hpc", grid="grid"
+        )
+
+        assert captured["grid"] == "grid"
+        assert "/grid/ns/" in captured["path"]
+
+    @patch("unimpeded.database.requests.put")
+    @patch("unimpeded.database.requests.get")
+    def test_upload_prior_info_uses_grid_in_path(
+        self, mock_get, mock_put, mock_creator, tmp_path, monkeypatch
+    ):
+        """upload_prior_info opens prior_info at a path containing the grid name."""
+        prior_file = tmp_path / "fake.prior_info"
+        prior_file.write_text("dummy prior\n")
+
+        captured = {}
+        original = mock_creator.get_prior_info_path
+
+        def patched(method, model, dataset, loc, grid="new_grid"):
+            captured["grid"] = grid
+            captured["path"] = original(method, model, dataset, loc, grid=grid)
+            return str(prior_file)
+
+        monkeypatch.setattr(mock_creator, "get_prior_info_path", patched)
+
+        get_resp = MagicMock()
+        get_resp.raise_for_status = MagicMock()
+        get_resp.json = MagicMock(return_value={"links": {"bucket": "http://bucket"}})
+        mock_get.return_value = get_resp
+
+        put_resp = MagicMock()
+        put_resp.raise_for_status = MagicMock()
+        put_resp.status_code = 201
+        mock_put.return_value = put_resp
+
+        mock_creator.upload_prior_info(
+            12345, "ns", "lcdm", "bao.sdss_dr16", "hpc", grid="new_grid"
+        )
+
+        assert captured["grid"] == "new_grid"
+        assert "/new_grid/ns/" in captured["path"]

@@ -250,7 +250,7 @@ class DatabaseCreator(Database):
         r.raise_for_status()
         return r
 
-    def get_samples(self, method, model, dataset, loc):
+    def get_samples(self, method, model, dataset, loc, grid="new_grid"):
         """
         Retrieve samples from a specified location based on method, model, and dataset.
 
@@ -259,6 +259,7 @@ class DatabaseCreator(Database):
             model (str): The cosmological model name.
             dataset (str): The dataset name.
             loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
+            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
 
         Returns:
             DataFrame: The samples loaded via the anesthetic's read_chains function.
@@ -266,22 +267,22 @@ class DatabaseCreator(Database):
         if loc == "hpc":
             if method == "ns":
                 samples = read_chains(
-                    f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}"
+                    f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{grid}/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}"
                 )
             elif method == "mcmc":
                 samples = read_chains(
-                    f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}"
+                    f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{grid}/{method}/{model}/{dataset}/{dataset}"
                 )
         elif loc == "local":
             if method == "ns":
                 samples = read_chains(
-                    f"../{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}"
+                    f"../{grid}/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}"
                 )
             elif method == "mcmc":
-                samples = read_chains(f"../{method}/{model}/{dataset}/{dataset}")
+                samples = read_chains(f"../{grid}/{method}/{model}/{dataset}/{dataset}")
         return samples
 
-    def upload_samples(self, deposit_id, method, model, dataset, loc):
+    def upload_samples(self, deposit_id, method, model, dataset, loc, grid="new_grid"):
         """
         Upload samples from a local or HPC location to a Zenodo deposit.
 
@@ -291,6 +292,7 @@ class DatabaseCreator(Database):
             model (str): The cosmological model name.
             dataset (str): The dataset name.
             loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
+            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
 
         Returns:
             Response: The requests response object after uploading.
@@ -301,7 +303,7 @@ class DatabaseCreator(Database):
         bucket_url = r.json().get("links", {}).get("bucket")
         params = {"access_token": self.ACCESS_TOKEN}
 
-        samples = self.get_samples(method, model, dataset, loc)
+        samples = self.get_samples(method, model, dataset, loc, grid=grid)
         filename = self.get_filename(method, model, dataset, filestype="samples")
 
         samples.to_csv(filename)
@@ -321,7 +323,7 @@ class DatabaseCreator(Database):
         os.remove(f"./{filename}")
         return r
 
-    def get_yaml_path(self, method, model, dataset, loc):
+    def get_yaml_path(self, method, model, dataset, loc, grid="new_grid"):
         """
         Generate the file path for the YAML file based on location, method, model, and dataset.
 
@@ -330,17 +332,18 @@ class DatabaseCreator(Database):
             model (str): The cosmological model name.
             dataset (str): The dataset name.
             loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
+            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
 
         Returns:
             str: The full path to the YAML file.
         """
         if loc == "hpc":
-            yaml_file_path = f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}.updated.yaml"
+            yaml_file_path = f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{grid}/{method}/{model}/{dataset}/{dataset}.updated.yaml"
         elif loc == "local":
-            yaml_file_path = f"/Users/ongdily/Documents/Cambridge/project2/codes/{method}/{model}/{dataset}/{dataset}.updated.yaml"
+            yaml_file_path = f"/Users/ongdily/Documents/Cambridge/project2/codes/{grid}/{method}/{model}/{dataset}/{dataset}.updated.yaml"
         return yaml_file_path
 
-    def upload_yaml(self, deposit_id, method, model, dataset, loc):
+    def upload_yaml(self, deposit_id, method, model, dataset, loc, grid="new_grid"):
         """
         Upload a YAML file containing MCMC or NS chains information to a Zenodo deposit.
 
@@ -350,6 +353,7 @@ class DatabaseCreator(Database):
             model (str): The cosmological model name.
             dataset (str): The dataset name.
             loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
+            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
 
         Returns:
             Response: The requests response object after uploading.
@@ -361,7 +365,7 @@ class DatabaseCreator(Database):
         params = {"access_token": self.ACCESS_TOKEN}
 
         filename = self.get_filename(method, model, dataset, filestype="info")
-        yaml_file_path = self.get_yaml_path(method, model, dataset, loc)
+        yaml_file_path = self.get_yaml_path(method, model, dataset, loc, grid=grid)
         with open(yaml_file_path, "rb") as fp:
             r = requests.put(f"{bucket_url}/{filename}", data=fp, params=params)
             r.raise_for_status()
@@ -374,7 +378,7 @@ class DatabaseCreator(Database):
 
         return r
 
-    def get_prior_info_path(self, method, model, dataset, loc):
+    def get_prior_info_path(self, method, model, dataset, loc, grid="new_grid"):
         """
         Generate the file path for the PRIOR_INFO file based on method, model, dataset and file location.
 
@@ -383,17 +387,20 @@ class DatabaseCreator(Database):
             model (str): The cosmological model name.
             dataset (str): The dataset name.
             loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
+            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
 
         Returns:
             str: The full path to the PRIOR_INFO file.
         """
         if loc == "hpc":
-            path = f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info"
+            path = f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{grid}/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info"
         elif loc == "local":
-            path = f"/Users/ongdily/Documents/Cambridge/project2/codes/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info"
+            path = f"/Users/ongdily/Documents/Cambridge/project2/codes/{grid}/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info"
         return path
 
-    def upload_prior_info(self, deposit_id, method, model, dataset, loc):
+    def upload_prior_info(
+        self, deposit_id, method, model, dataset, loc, grid="new_grid"
+    ):
         """
         Upload the PRIOR_INFO file to a Zenodo deposit.
 
@@ -403,6 +410,7 @@ class DatabaseCreator(Database):
             model (str): The cosmological model name.
             dataset (str): The dataset name.
             loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
+            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
 
         Returns:
             Response: The requests response object after uploading.
@@ -414,7 +422,9 @@ class DatabaseCreator(Database):
         params = {"access_token": self.ACCESS_TOKEN}
 
         filename = self.get_filename(method, model, dataset, filestype="prior_info")
-        prior_info_file_path = self.get_prior_info_path(method, model, dataset, loc)
+        prior_info_file_path = self.get_prior_info_path(
+            method, model, dataset, loc, grid=grid
+        )
         with open(prior_info_file_path, "rb") as fp:
             r = requests.put(f"{bucket_url}/{filename}", data=fp, params=params)
             r.raise_for_status()
@@ -427,66 +437,60 @@ class DatabaseCreator(Database):
 
         return r
 
-    def get_deposit_ids_by_title(self, title, size=1000):
+    def get_deposit_ids_by_title(self, title, size=25):
         """
         Search and retrieve deposit IDs that match a given title from Zenodo. Can search for both published and unpublished deposits.
 
         Args:
             title (str): The deposit title to search for.
-            size (int, optional): Maximum number of deposit results to retrieve. Defaults to 1000.
+            size (int, optional): Page size for the Zenodo deposit listing endpoint. Pagination is followed automatically via the response's `next` link, so the total number of results is not limited by this value. Zenodo's deposit API rejects size > 25 with a 400 validation error, so the default is 25.
 
         Returns:
             dict: A dictionary with two keys 'published' and 'unpublished' containing lists of published and unpublished deposit IDs respectively.
         """
         deposit_ids = {"published": [], "unpublished": []}
-        url = self.base_url
-        params = {
-            "q": f'title:"{title}"',
-            "all_versions": True,  # Include all versions (published and unpublished)
-            "status": "all",  # Ensure drafts/unpublished deposits are included
-            "access_token": self.ACCESS_TOKEN,
-            "size": size,  # Maximum number of deposit results
-        }
+        page = 1
 
         try:
-            while url:
-                # Fetch the data
-                r = requests.get(url, params=params if url == self.base_url else None)
+            while True:
+                params = {
+                    "q": f'title:"{title}"',
+                    "all_versions": True,
+                    "status": "all",
+                    "access_token": self.ACCESS_TOKEN,
+                    "size": size,
+                    "page": page,
+                }
+                r = requests.get(self.base_url, params=params)
                 r.raise_for_status()
                 response_data = r.json()
 
-                # Process dictionary-based response with pagination
-                if isinstance(response_data, dict):
-                    for hit in response_data.get("hits", {}).get("hits", []):
-                        deposit_id = hit.get("id")
-                        is_published = hit.get("submitted", False)
-                        if deposit_id:
-                            if is_published:
-                                deposit_ids["published"].append(deposit_id)
-                            else:
-                                deposit_ids["unpublished"].append(deposit_id)
-
-                    # Follow the next page URL if it exists
-                    url = response_data.get("links", {}).get("next")
-                    params = None  # Clear params after the first request
-
-                # Handle list-based responses (if applicable)
-                elif isinstance(response_data, list):
-                    for record in response_data:
-                        deposit_id = record.get("id")
-                        is_published = record.get("submitted", False)
-                        if deposit_id:
-                            if is_published:
-                                deposit_ids["published"].append(deposit_id)
-                            else:
-                                deposit_ids["unpublished"].append(deposit_id)
-
-                    # Stop if no pagination is available for list-based responses
-                    url = None
-
+                # Normalise response shape: both list and {"hits": {"hits": [...]}}
+                # dicts have been observed on Zenodo's deposit endpoint.
+                if isinstance(response_data, list):
+                    items = response_data
+                elif isinstance(response_data, dict):
+                    items = response_data.get("hits", {}).get("hits", [])
                 else:
                     print("Unexpected response structure.")
                     break
+
+                if not items:
+                    break  # empty page = no more results
+
+                for record in items:
+                    deposit_id = record.get("id")
+                    is_published = record.get("submitted", False)
+                    if deposit_id:
+                        if is_published:
+                            deposit_ids["published"].append(deposit_id)
+                        else:
+                            deposit_ids["unpublished"].append(deposit_id)
+
+                if len(items) < size:
+                    break  # partial page = last page
+
+                page += 1
 
         except requests.exceptions.RequestException as e:
             print(f"An error occurred while fetching deposit IDs: {e}")
@@ -592,7 +596,7 @@ class DatabaseCreator(Database):
             metadata (dict): The metadata for the deposit.
 
         Returns:
-            None
+            bool: True if the deposit was published successfully, False otherwise.
         """
         publish_url = f"{self.base_url}/{deposit_id}/actions/publish"
 
@@ -609,6 +613,7 @@ class DatabaseCreator(Database):
             print(
                 f"{title} (Deposit ID: {deposit_id}) is published successfully. Concept DOI: {concept_doi}"
             )
+            return True
 
         except requests.exceptions.HTTPError as http_err:
             error_code = response.status_code if "response" in locals() else "N/A"
@@ -617,8 +622,10 @@ class DatabaseCreator(Database):
                 f"{title} (Deposit ID: {deposit_id}) publishing failed. Error code: {error_code}"
             )
             print(f"Error details: {http_err}")
+            return False
         except Exception as err:
             print(f"An unexpected error occurred: {err}")
+            return False
 
     def newversion(self, deposit_id):
         """
