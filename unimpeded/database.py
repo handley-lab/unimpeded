@@ -445,56 +445,48 @@ class DatabaseCreator(Database):
             dict: A dictionary with two keys 'published' and 'unpublished' containing lists of published and unpublished deposit IDs respectively.
         """
         deposit_ids = {"published": [], "unpublished": []}
-        url = self.base_url
-        params = {
-            "q": f'title:"{title}"',
-            "all_versions": True,  # Include all versions (published and unpublished)
-            "status": "all",  # Ensure drafts/unpublished deposits are included
-            "access_token": self.ACCESS_TOKEN,
-            "size": size,  # Maximum number of deposit results
-        }
+        page = 1
 
         try:
-            while url:
-                # Fetch the data
-                r = requests.get(url, params=params if url == self.base_url else None)
+            while True:
+                params = {
+                    "q": f'title:"{title}"',
+                    "all_versions": True,
+                    "status": "all",
+                    "access_token": self.ACCESS_TOKEN,
+                    "size": size,
+                    "page": page,
+                }
+                r = requests.get(self.base_url, params=params)
                 r.raise_for_status()
                 response_data = r.json()
 
-                # Process dictionary-based response with pagination
-                if isinstance(response_data, dict):
-                    for hit in response_data.get("hits", {}).get("hits", []):
-                        deposit_id = hit.get("id")
-                        is_published = hit.get("submitted", False)
-                        if deposit_id:
-                            if is_published:
-                                deposit_ids["published"].append(deposit_id)
-                            else:
-                                deposit_ids["unpublished"].append(deposit_id)
-
-                    # Follow the next page URL if it exists
-                    url = response_data.get("links", {}).get("next")
-                    params = None  # Clear params after the first request
-
-                # Handle list-based responses (if applicable)
-                elif isinstance(response_data, list):
-                    for record in response_data:
-                        deposit_id = record.get("id")
-                        is_published = record.get("submitted", False)
-                        if deposit_id:
-                            if is_published:
-                                deposit_ids["published"].append(deposit_id)
-                            else:
-                                deposit_ids["unpublished"].append(deposit_id)
-
-                    # Follow pagination via the HTTP Link header (Zenodo's deposit
-                    # endpoint returns a list and exposes next-page URLs there).
-                    url = r.links.get("next", {}).get("url")
-                    params = None
-
+                # Normalise response shape: both list and {"hits": {"hits": [...]}}
+                # dicts have been observed on Zenodo's deposit endpoint.
+                if isinstance(response_data, list):
+                    items = response_data
+                elif isinstance(response_data, dict):
+                    items = response_data.get("hits", {}).get("hits", [])
                 else:
                     print("Unexpected response structure.")
                     break
+
+                if not items:
+                    break  # empty page = no more results
+
+                for record in items:
+                    deposit_id = record.get("id")
+                    is_published = record.get("submitted", False)
+                    if deposit_id:
+                        if is_published:
+                            deposit_ids["published"].append(deposit_id)
+                        else:
+                            deposit_ids["unpublished"].append(deposit_id)
+
+                if len(items) < size:
+                    break  # partial page = last page
+
+                page += 1
 
         except requests.exceptions.RequestException as e:
             print(f"An error occurred while fetching deposit IDs: {e}")
