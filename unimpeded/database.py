@@ -592,7 +592,7 @@ class DatabaseCreator(Database):
             metadata (dict): The metadata for the deposit.
 
         Returns:
-            None
+            bool: True if the deposit was published successfully, False otherwise.
         """
         publish_url = f"{self.base_url}/{deposit_id}/actions/publish"
 
@@ -609,6 +609,7 @@ class DatabaseCreator(Database):
             print(
                 f"{title} (Deposit ID: {deposit_id}) is published successfully. Concept DOI: {concept_doi}"
             )
+            return True
 
         except requests.exceptions.HTTPError as http_err:
             error_code = response.status_code if "response" in locals() else "N/A"
@@ -617,8 +618,10 @@ class DatabaseCreator(Database):
                 f"{title} (Deposit ID: {deposit_id}) publishing failed. Error code: {error_code}"
             )
             print(f"Error details: {http_err}")
+            return False
         except Exception as err:
             print(f"An unexpected error occurred: {err}")
+            return False
 
     def newversion(self, deposit_id):
         """
