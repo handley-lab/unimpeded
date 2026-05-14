@@ -487,8 +487,10 @@ class DatabaseCreator(Database):
                             else:
                                 deposit_ids["unpublished"].append(deposit_id)
 
-                    # Stop if no pagination is available for list-based responses
-                    url = None
+                    # Follow pagination via the HTTP Link header (Zenodo's deposit
+                    # endpoint returns a list and exposes next-page URLs there).
+                    url = r.links.get("next", {}).get("url")
+                    params = None
 
                 else:
                     print("Unexpected response structure.")
