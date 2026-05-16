@@ -128,19 +128,47 @@ jobs:
       - name: install dependencies
         shell: bash -el {0}
         run: |
-          conda install conda-build anaconda-client
+          # Pin major versions to avoid breakage from unrelated tool changes.
+          # Bump when conda-build or anaconda-client introduce CLI changes we use.
+          conda install -y "conda-build>=24,<26" "anaconda-client>=1.12,<2"
           pip install grayskull
       - name: Generate meta.yaml from grayskull
         shell: bash -el {0}
         run: grayskull pypi --strict-conda-forge unimpeded==${{ needs.get-version.outputs.version }}
       - name: Build and upload the conda packages
-        uses: uibcdf/action-build-and-upload-conda-packages@v1.5.0
-        with:
-          meta_yaml_dir: unimpeded
-          python-version: '3.10'
-          user: handley-lab
-          label: 'main'
-          token: ${{ secrets.ANACONDA_TOKEN }} # Replace with the right name of your secret
+        shell: bash -el {0}
+        env:
+          ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+        run: |
+          set -e
+          out_dir=$(mktemp -d -t conda-build-XXXXXXXXXX)
+          echo "Building unimpeded conda package..."
+          conda-build unimpeded/ \
+            --no-anaconda-upload \
+            --output-folder "$out_dir" \
+            --python 3.10
+
+          echo ""
+          echo "Built artifacts:"
+          find "$out_dir" -maxdepth 3 \( -name "*.tar.bz2" -o -name "*.conda" \)
+
+          echo ""
+          echo "Uploading to anaconda.org..."
+          found=0
+          while IFS= read -r pkg; do
+            if [ -e "$pkg" ]; then
+              echo "  Uploading $pkg"
+              anaconda --token "$ANACONDA_TOKEN" upload \
+                --user handley-lab --label main "$pkg"
+              found=$((found + 1))
+            fi
+          done < <(find "$out_dir" -maxdepth 3 \( -name "*.tar.bz2" -o -name "*.conda" \))
+
+          if [ "$found" -eq 0 ]; then
+            echo "ERROR: no built packages found in $out_dir"
+            exit 1
+          fi
+          echo "Uploaded $found package(s)."
 
   conda-build:
     needs: 
