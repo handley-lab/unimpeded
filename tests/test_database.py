@@ -682,3 +682,214 @@ class TestUploadMethodsForwardGrid:
 
         assert captured["grid"] == "new_grid"
         assert "/new_grid/ns/" in captured["path"]
+
+
+class TestDatasetAliases:
+    """Tests for the DATASET_ALIASES feature on DatabaseExplorer.
+
+    Long-form dataset names (e.g.
+    'planck_2018_CamSpec_nolens+planck_2018_lensing') should:
+      1. Be returned by ``_resolve_dataset_alias`` as their canonical
+         short form.
+      2. Appear in ``dbe.datasets`` / ``dbe.combinations`` alongside the
+         short form after the alias-augmentation step in
+         ``_fetch_combinations``.
+      3. Resolve to the canonical short form inside download methods so
+         the Zenodo title query and filename both use the short name.
+    """
+
+    def test_resolve_dataset_alias_known(self):
+        """Known long-form alias maps to canonical short form."""
+        from unimpeded.database import _resolve_dataset_alias
+
+        assert (
+            _resolve_dataset_alias("planck_2018_CamSpec_nolens+planck_2018_lensing")
+            == "planck_2018_CamSpec"
+        )
+        assert (
+            _resolve_dataset_alias("planck_2018_lensing+planck_2018_plik_nolens")
+            == "planck_2018_plik"
+        )
+
+    def test_resolve_dataset_alias_unknown_passthrough(self):
+        """Unknown names are returned unchanged."""
+        from unimpeded.database import _resolve_dataset_alias
+
+        assert _resolve_dataset_alias("bao.sdss_dr16") == "bao.sdss_dr16"
+        assert _resolve_dataset_alias("planck_2018_CamSpec") == "planck_2018_CamSpec"
+        assert _resolve_dataset_alias("anything_else") == "anything_else"
+
+    def test_fetch_combinations_augments_with_long_names(self, monkeypatch):
+        """_fetch_combinations adds (model, long_name) entries whenever the
+        canonical short form (model, short_name) is present."""
+        from unimpeded.database import Database, DATASET_ALIASES
+
+        # Mock the HTTP layer of _fetch_combinations to return a couple of
+        # short-form pairs we know about plus an unrelated one.
+        mock_response_pages = [
+            {
+                "hits": {
+                    "hits": [
+                        {"metadata": {"title": "unimpeded: lcdm planck_2018_CamSpec"}},
+                        {"metadata": {"title": "unimpeded: wlcdm planck_2018_CamSpec"}},
+                        {"metadata": {"title": "unimpeded: lcdm planck_2018_plik"}},
+                        {"metadata": {"title": "unimpeded: lcdm bao.sdss_dr16"}},
+                    ],
+                    "total": 4,
+                }
+            },
+        ]
+        call = {"i": 0}
+
+        def mock_get(*args, **kwargs):
+            r = MagicMock()
+            r.raise_for_status = MagicMock()
+            if call["i"] < len(mock_response_pages):
+                r.json = MagicMock(return_value=mock_response_pages[call["i"]])
+            else:
+                r.json = MagicMock(return_value={"hits": {"hits": [], "total": 0}})
+            call["i"] += 1
+            return r
+
+        monkeypatch.setattr("requests.get", mock_get)
+
+        db = Database(sandbox=False)
+
+        # Original short-form pairs survive
+        assert ("lcdm", "planck_2018_CamSpec") in db.combinations
+        assert ("wlcdm", "planck_2018_CamSpec") in db.combinations
+        assert ("lcdm", "planck_2018_plik") in db.combinations
+        assert ("lcdm", "bao.sdss_dr16") in db.combinations
+
+        # Long-form aliases appear too — one per model that had the short form
+        assert (
+            "lcdm",
+            "planck_2018_CamSpec_nolens+planck_2018_lensing",
+        ) in db.combinations
+        assert (
+            "wlcdm",
+            "planck_2018_CamSpec_nolens+planck_2018_lensing",
+        ) in db.combinations
+        assert (
+            "lcdm",
+            "planck_2018_lensing+planck_2018_plik_nolens",
+        ) in db.combinations
+
+        # Unrelated dataset does NOT get spurious aliases
+        for long_name in DATASET_ALIASES:
+            assert ("lcdm", "bao.sdss_dr16") in db.combinations  # untouched
+            # bao.sdss_dr16 isn't a short-form value, so no alias is added for it
+            assert long_name != "bao.sdss_dr16"
+
+    def test_is_available_accepts_alias(self, monkeypatch):
+        """is_available returns True for long-form aliases when the canonical
+        short form exists in combinations (via the augmentation in
+        _fetch_combinations)."""
+        from unimpeded.database import Database
+
+        mock_pages = [
+            {
+                "hits": {
+                    "hits": [
+                        {"metadata": {"title": "unimpeded: lcdm planck_2018_CamSpec"}},
+                    ],
+                    "total": 1,
+                }
+            },
+        ]
+        call = {"i": 0}
+
+        def mock_get(*args, **kwargs):
+            r = MagicMock()
+            r.raise_for_status = MagicMock()
+            if call["i"] < len(mock_pages):
+                r.json = MagicMock(return_value=mock_pages[call["i"]])
+            else:
+                r.json = MagicMock(return_value={"hits": {"hits": [], "total": 0}})
+            call["i"] += 1
+            return r
+
+        monkeypatch.setattr("requests.get", mock_get)
+
+        db = Database(sandbox=False)
+        assert db.is_available("lcdm", "planck_2018_CamSpec") is True
+        assert (
+            db.is_available("lcdm", "planck_2018_CamSpec_nolens+planck_2018_lensing")
+            is True
+        )
+        assert db.is_available("lcdm", "some_unknown_dataset") is False
+
+    def test_download_methods_resolve_alias(self, monkeypatch):
+        """The three download_* methods translate long-form aliases to the
+        canonical short form before forming the filename / title query."""
+        from unimpeded.database import DatabaseExplorer
+
+        # Skip the constructor's _fetch_combinations HTTP call
+        monkeypatch.setattr(
+            "unimpeded.database.Database._fetch_combinations", lambda self: set()
+        )
+
+        explorer = DatabaseExplorer(sandbox=False)
+
+        captured = {"filenames": [], "datasets": []}
+
+        def fake_get_filename(method, model, dataset, filestype):
+            captured["filenames"].append(dataset)
+            return f"{method}_{model}_{dataset}.csv"
+
+        def fake_get_deposit_id(model, dataset):
+            captured["datasets"].append(dataset)
+            return 12345
+
+        def fake_download(deposit_id, filename):
+            return None
+
+        monkeypatch.setattr(explorer, "get_filename", fake_get_filename)
+        # patch the *bound* method on the instance so the wrapped version
+        # (with alias resolution applied at the start) calls our fake
+        monkeypatch.setattr(
+            explorer, "get_deposit_id_by_title_users", fake_get_deposit_id
+        )
+        monkeypatch.setattr(explorer, "download", fake_download)
+
+        explorer.download_samples(
+            "ns", "lcdm", "planck_2018_CamSpec_nolens+planck_2018_lensing"
+        )
+
+        # After alias resolution, downstream calls should receive the
+        # canonical short form
+        assert captured["filenames"][-1] == "planck_2018_CamSpec"
+        assert captured["datasets"][-1] == "planck_2018_CamSpec"
+
+    def test_get_deposit_id_by_title_users_resolves_alias(self, monkeypatch):
+        """get_deposit_id_by_title_users builds the Zenodo title query using
+        the canonical short form even when called with a long-form alias."""
+        from unimpeded.database import DatabaseExplorer
+
+        monkeypatch.setattr(
+            "unimpeded.database.Database._fetch_combinations", lambda self: set()
+        )
+
+        explorer = DatabaseExplorer(sandbox=False)
+
+        captured_params = {}
+
+        def mock_get(url, params=None):
+            captured_params.update(params or {})
+            r = MagicMock()
+            r.raise_for_status = MagicMock()
+            r.json = MagicMock(
+                return_value={"hits": {"hits": [{"id": 99999}], "total": 1}}
+            )
+            return r
+
+        monkeypatch.setattr("requests.get", mock_get)
+
+        result = explorer.get_deposit_id_by_title_users(
+            "lcdm", "planck_2018_lensing+planck_2018_plik_nolens"
+        )
+
+        # Title in the query should use the canonical short form
+        assert "planck_2018_plik" in captured_params["q"]
+        assert "planck_2018_lensing+planck_2018_plik_nolens" not in captured_params["q"]
+        assert result == 99999
