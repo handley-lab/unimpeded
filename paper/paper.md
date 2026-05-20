@@ -81,4 +81,8 @@ The package is fully documented, tested, and available for installation via the 
 
 We thank the developers of the open-source packages that this work relies upon, including `anesthetic`, `numpy`, `scipy`, `pandas`, and `corner.py`. This work was performed using the Cambridge Service for Data Driven Discovery (CSD3), operated by the University of Cambridge Research Computing Service, provided by Dell EMC and Intel using Tier-2 funding from the Engineering and Physical Sciences Research Council (capital grant EP/P020259/1), and DiRAC funding from the Science and Technology Facilities Council (www.dirac.ac.uk).
 
+# AI Usage Disclosure
+
+The core `unimpeded` package was written by the human authors prior to the availability of Claude Code. Anthropic's Claude Code (Claude Opus 4.7) was later used for a limited set of targeted contributions: small additions to `unimpeded.database`, writing unit tests for those additions, and drafting workflow documentation. All AI-assisted outputs were reviewed, edited, and validated by the human authors, who retained all core design decisions.
+
 # References
