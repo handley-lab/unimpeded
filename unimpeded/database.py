@@ -8,6 +8,32 @@ import yaml
 from anesthetic import read_chains, read_csv
 
 
+# Dataset aliases: long-form user-facing names mapped to the canonical
+# short-form name used in Zenodo deposit titles and filenames.
+#
+# Background: some chain runs were stored on Zenodo under simpler short
+# names that don't fully describe the physics. For example, the
+# 'planck_2018_CamSpec' chains actually use the CamSpec_nolens likelihood
+# combined with planck_2018_lensing. Users searching for the more
+# descriptive long form should still get the canonical deposit, and the
+# long form should appear in dbe.datasets / dbe.combinations so it can
+# be discovered.
+DATASET_ALIASES = {
+    "planck_2018_CamSpec_nolens+planck_2018_lensing": "planck_2018_CamSpec",
+    "planck_2018_lensing+planck_2018_plik_nolens": "planck_2018_plik",
+}
+
+
+def _resolve_dataset_alias(dataset):
+    """Return the canonical short-form name for a (possibly aliased) dataset.
+
+    If ``dataset`` is a known long-form alias listed in ``DATASET_ALIASES``,
+    return the corresponding short-form name used on Zenodo. Otherwise
+    return ``dataset`` unchanged.
+    """
+    return DATASET_ALIASES.get(dataset, dataset)
+
+
 class Database:
     """
     Base class providing utility methods for generating file names for different file types. This class in inherited by class DatabaseCreator and DatabaseExplorer.
@@ -117,6 +143,15 @@ class Database:
 
         except requests.RequestException as e:
             print(f"Error fetching deposits: {e}")
+
+        # Augment with long-form alias entries so they appear in
+        # dbe.datasets / dbe.combinations alongside the canonical short
+        # names. Downloads via the long-form alias resolve to the same
+        # Zenodo deposit (see _resolve_dataset_alias).
+        for long_name, short_name in DATASET_ALIASES.items():
+            models_with_short = {m for m, d in combinations if d == short_name}
+            for model in models_with_short:
+                combinations.add((model, long_name))
 
         return combinations
 
@@ -780,12 +815,13 @@ class DatabaseExplorer(Database):
 
         Args:
             method (str): The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name.
+            model (str): The cosmological model name. Long-form aliases (see DATASET_ALIASES) are accepted and resolved transparently.
             dataset (str): The dataset name.
 
         Returns:
             DataFrame or None: The downloaded sample data.
         """
+        dataset = _resolve_dataset_alias(dataset)
         filename = self.get_filename(method, model, dataset, "samples")
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
@@ -797,11 +833,12 @@ class DatabaseExplorer(Database):
         Args:
             method (str): The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-Hastings).
             model (str): The cosmological model name.
-            dataset (str): The dataset name..
+            dataset (str): The dataset name. Long-form aliases (see DATASET_ALIASES) are accepted and resolved transparently.
 
         Returns:
             dict or None: The contents of the info file.
         """
+        dataset = _resolve_dataset_alias(dataset)
         filename = self.get_filename(method, model, dataset, "info")
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
@@ -812,12 +849,13 @@ class DatabaseExplorer(Database):
 
         Args:
             model (str): The cosmological model name.
-            dataset (str): The dataset name.
+            dataset (str): The dataset name. Long-form aliases (see DATASET_ALIASES) are accepted and resolved transparently.
             method (str): 'ns' for Nested Sampling by default.
 
         Returns:
             dict or None: A dictionary containing the value of 'nprior' and 'ndiscarded'.
         """
+        dataset = _resolve_dataset_alias(dataset)
         filename = self.get_filename(method, model, dataset, "prior_info")
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
@@ -828,11 +866,12 @@ class DatabaseExplorer(Database):
 
         Args:
             model (str): The cosmological model name.
-            dataset (str): The dataset name.
+            dataset (str): The dataset name. Long-form aliases (see DATASET_ALIASES) are accepted and resolved transparently.
 
         Returns:
             str or None: The deposit ID of the matching result, or None if not found.
         """
+        dataset = _resolve_dataset_alias(dataset)
         params = {
             "q": f'title:"unimpeded: {model} {dataset}"',
             "size": 1,
