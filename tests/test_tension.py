@@ -316,3 +316,106 @@ class TestTensionIntegration:
 
         # Results should have same length
         assert len(result1) == len(result2)
+
+
+class TestComponentLoglike:
+    """Tests for computing tension moments from ``loglike__*`` columns.
+
+    Stock Cobaya's PolyChord wrapper stores ``logL = loglike + logprior +
+    logvolume`` rather than the pure data likelihood. ``d_G``, ``logS`` (and the
+    ``p``/``sigma`` derived from them) are data-likelihood moments, so they must
+    be computed from the summed ``loglike__*`` columns, not the ``logL`` column.
+    The evidence ``logZ`` (and hence ``logR``) is unchanged.
+    """
+
+    @staticmethod
+    def _make_ns(contaminated=True, with_loglike=True, seed=0, nlive=125, ndead=1000):
+        """Build a small valid NestedSamples run.
+
+        The run's ``logL`` column plays the role of what PolyChord recorded.
+        When ``contaminated`` is True the recorded ``logL`` carries a varying
+        ``logprior`` term, and the pure data likelihood is stored in
+        ``loglike__A`` such that ``logL == loglike__A + logprior__0``.
+        """
+        rng = np.random.default_rng(seed)
+        logL = np.sort(rng.random(ndead)) * 20.0
+        logL_birth = np.concatenate([np.full(nlive, -1e30), logL[: ndead - nlive]])
+        params = rng.standard_normal((ndead, 2))
+        ns = NestedSamples(
+            data=params, columns=["x", "y"], logL=logL, logL_birth=logL_birth
+        )
+        if with_loglike:
+            logprior = rng.standard_normal(ndead) * (2.0 if contaminated else 0.0)
+            ns["logprior__0"] = logprior
+            ns["loglike__A"] = logL - logprior  # logL = loglike + logprior
+        return ns
+
+    def test_contaminated_run_uses_loglike_columns(self):
+        """d_G/logL_P/D_KL come from loglike__, logZ stays from logL."""
+        from unimpeded.tension import _stats
+
+        ns = self._make_ns(contaminated=True)
+        corrected = _stats(ns)
+        standard = ns.stats()
+
+        # Evidence is unchanged (still from the run's logL column).
+        assert np.isclose(corrected["logZ"], standard["logZ"])
+
+        # The likelihood moments differ, because logprior varies.
+        assert not np.isclose(corrected["d_G"], standard["d_G"])
+        assert not np.isclose(corrected["logL_P"], standard["logL_P"])
+
+        # The corrected moments match a direct computation from loglike__A.
+        w = ns.get_weights()
+        w = w / w.sum()
+        logL_data = ns["loglike__A"].to_numpy()
+        mean = np.sum(w * logL_data)
+        d_G_direct = 2 * np.sum(w * (logL_data - mean) ** 2)
+        assert np.isclose(corrected["d_G"], d_G_direct, rtol=1e-6)
+        assert np.isclose(corrected["logL_P"], mean, rtol=1e-6)
+
+    def test_clean_run_is_unchanged(self):
+        """When logL already equals Sum(loglike__), results are identical."""
+        from unimpeded.tension import _stats
+
+        ns = self._make_ns(contaminated=False)
+        corrected = _stats(ns)
+        standard = ns.stats()
+        for key in ["logZ", "D_KL", "logL_P", "d_G"]:
+            assert np.isclose(corrected[key], standard[key], rtol=1e-8), key
+
+    def test_no_loglike_columns_falls_back(self):
+        """Without loglike__ columns, behaviour is exactly the standard stats."""
+        from unimpeded.tension import _stats
+
+        ns = self._make_ns(with_loglike=False)
+        corrected = _stats(ns)
+        standard = ns.stats()
+        for key in ["logZ", "D_KL", "logL_P", "d_G"]:
+            assert np.isclose(corrected[key], standard[key], rtol=1e-10), key
+
+    def test_tension_stats_end_to_end_with_nested_samples(self):
+        """tension_stats runs on real NestedSamples carrying loglike__ columns.
+
+        The joint's d_G is taken from its loglike__ columns (not the contaminated
+        logL), while logR (evidence) is unaffected. We check the pipeline runs
+        end-to-end and that the joint d_G entering the calculation is the
+        loglike-based one.
+        """
+        from unimpeded.tension import _stats
+
+        joint = self._make_ns(contaminated=True, seed=1, ndead=1500)
+        sep_a = self._make_ns(contaminated=False, seed=2)
+        sep_b = self._make_ns(contaminated=False, seed=3)
+
+        result = tension_stats(joint, sep_a, sep_b, nsamples=100)
+        for col in ["logR", "I", "logS", "d_G", "p", "sigma"]:
+            assert col in result.columns
+        # logR (evidence-based) is well defined regardless of contamination.
+        assert np.isfinite(result["logR"]).all()
+
+        # The joint d_G feeding the tension is the loglike-based (corrected) one,
+        # not anesthetic's contaminated value.
+        d_joint_corrected = float(_stats(joint, nsamples=100)["d_G"].mean())
+        d_joint_contaminated = float(joint.stats(nsamples=100)["d_G"].mean())
+        assert not np.isclose(d_joint_corrected, d_joint_contaminated)

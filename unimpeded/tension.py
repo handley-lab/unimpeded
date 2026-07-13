@@ -9,6 +9,74 @@ from scipy.stats import chi2
 from unimpeded.database import DatabaseExplorer
 
 
+def _loglike_columns(data):
+    """Return the per-experiment ``loglike__*`` columns of a run, if any.
+
+    Cobaya stores the log-likelihood of each experiment in a
+    ``loglike__<name>`` column; their sum is the pure data log-likelihood.
+    This is the quantity the suspiciousness ``logS`` and the Bayesian model
+    dimensionality ``d_G`` are defined in terms of. Returns an empty list when
+    no such columns are present.
+    """
+    cols = []
+    for c in data.columns:
+        name = c[0] if isinstance(c, tuple) else c
+        if isinstance(name, str) and name.startswith("loglike__"):
+            cols.append(c)
+    return cols
+
+
+def _stats(data, nsamples=None, beta=None):
+    r"""Nested sampling stats using the *data* likelihood for the moments.
+
+    Identical to :meth:`anesthetic.samples.NestedSamples.stats` except that the
+    posterior-averaged log-likelihood ``logL_P``, the Kullback--Leibler
+    divergence ``D_KL`` and the Bayesian model dimensionality ``d_G`` are
+    computed from the summed ``loglike__*`` columns (the pure data
+    log-likelihood) instead of the ``logL`` column. The evidence ``logZ`` and
+    the posterior weights are still taken from the run's ``logL`` column, so the
+    evidence -- and hence ``logR`` -- is unchanged.
+
+    This matters for chains produced by stock Cobaya's PolyChord wrapper, whose
+    stored ``logL`` column is ``loglike + logprior + logvolume`` rather than the
+    pure likelihood: using it for the moments injects the prior's variance into
+    ``d_G`` and its mean into ``logS``. Because ``d_G`` and ``logS`` are by
+    definition data-likelihood moments, summing the ``loglike__*`` columns is
+    the correct choice for *every* run -- for chains where ``logL`` already
+    equals the summed likelihoods (the vast majority) this returns identical
+    results. Falls back to the standard computation when no ``loglike__*``
+    columns are present, or for array-valued ``beta``.
+    """
+    loglike_cols = _loglike_columns(data)
+    if not loglike_cols or np.ndim(beta) > 0:
+        return data.stats(nsamples=nsamples, beta=beta)
+
+    # Evidence and posterior weights from the run's own logL column: correct,
+    # because the evidence integral legitimately includes the prior.
+    logw = data.logw(nsamples, beta)
+    if nsamples is None and beta is None:
+        samples = data._constructor_sliced(index=data.columns[:0], dtype=float)
+    else:
+        samples = Samples(index=logw.columns, columns=data.columns[:0])
+    samples["logZ"] = data.logZ(logw)
+    samples.set_label("logZ", r"$\ln\mathcal{Z}$")
+    w = np.exp(logw - samples["logZ"])
+
+    # Likelihood moments from the summed per-experiment loglike__ columns.
+    beta_val = data.beta if beta is None else beta
+    betalogL = beta_val * data[loglike_cols].sum(axis=1)
+    S = (logw * 0).add(betalogL, axis=0) - samples.logZ
+
+    samples["D_KL"] = (S * w).sum()
+    samples.set_label("D_KL", r"$\mathcal{D}_\mathrm{KL}$")
+    samples["logL_P"] = samples["logZ"] + samples["D_KL"]
+    samples.set_label("logL_P", r"$\langle\ln\mathcal{L}\rangle_\mathcal{P}$")
+    samples["d_G"] = ((S - samples.D_KL) ** 2 * w).sum() * 2
+    samples.set_label("d_G", r"$d_\mathrm{G}$")
+    samples.label = data.label
+    return samples
+
+
 def tension_stats(
     joint, *separate, joint_f=1.0, separate_fs=None, nsamples=None, beta=None
 ):
@@ -93,7 +161,7 @@ def tension_stats(
 
     def get_stats(data):
         if isinstance(data, NestedSamples) and not set(columns).issubset(data.columns):
-            return data.stats(nsamples=nsamples, beta=beta)
+            return _stats(data, nsamples=nsamples, beta=beta)
         return data
 
     joint_stats = get_stats(joint)
