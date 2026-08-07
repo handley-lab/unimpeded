@@ -158,8 +158,12 @@ jobs:
           while IFS= read -r pkg; do
             if [ -e "$pkg" ]; then
               echo "  Uploading $pkg"
+              # --skip-existing keeps re-runs idempotent: pushes to master that
+              # don't bump the version would otherwise fail with a 409 conflict,
+              # matching the skip-on-existing behaviour of the pypi, tag and
+              # release steps above.
               anaconda --token "$ANACONDA_TOKEN" upload \
-                --user handley-lab --label main "$pkg"
+                --skip-existing --user handley-lab --label main "$pkg"
               found=$((found + 1))
             fi
           done < <(find "$out_dir" -maxdepth 3 \( -name "*.tar.bz2" -o -name "*.conda" \))
