@@ -1,6 +1,6 @@
 """Test configuration and fixtures for unimpeded tests."""
 
-import os
+import re
 
 import pytest
 
@@ -41,53 +41,68 @@ def vcr_config():
         "match_on": ["method", "scheme", "host", "port", "path"],
         # Serialization
         "serializer": "yaml",
-        # Strip large CSV bodies before recording
-        "before_record_response": strip_csv_response_body,
+        # Never write credentials into a cassette. Zenodo takes the token as a
+        # query parameter, so it lands in the recorded URI unless filtered here;
+        # ``filter_headers`` covers the ``Authorization`` form as well as the
+        # session cookies Zenodo sets. Because ``match_on`` deliberately omits
+        # the query string, replacing the value cannot break cassette matching.
+        "filter_query_parameters": [("access_token", "FILTERED_TOKEN")],
+        "filter_headers": [
+            ("authorization", "FILTERED_TOKEN"),
+            ("cookie", "FILTERED_COOKIE"),
+            ("set-cookie", "FILTERED_COOKIE"),
+        ],
+        # Strip large CSV bodies and scrub tokens out of response bodies
+        "before_record_response": sanitize_response,
         # Use flat cassette directory structure
         "cassette_library_dir": "tests/cassettes",
     }
 
 
 def sanitize_response(response):
-    """Remove or replace sensitive data in recorded responses."""
-    # Convert response body to string if it's bytes
-    if hasattr(response["body"], "string"):
-        body_str = response["body"]["string"]
-        if isinstance(body_str, bytes):
-            body_str = body_str.decode("utf-8")
+    """Strip large CSV bodies and scrub any token out of a recorded response.
 
-        # Replace any access tokens in response bodies
-        if "access_token" in body_str:
-            import re
+    Wired into ``vcr_config`` as ``before_record_response``. The request side is
+    handled by ``filter_query_parameters`` / ``filter_headers``, which are
+    applied by vcrpy itself and cannot be bypassed the way a hand-written hook
+    can if it is left unregistered.
+    """
+    response = strip_csv_response_body(response)
 
-            body_str = re.sub(
-                r'"access_token"\s*:\s*"[^"]*"',
-                '"access_token": "FILTERED_TOKEN"',
-                body_str,
-            )
-            response["body"]["string"] = body_str.encode("utf-8")
+    if "body" not in response or "string" not in response["body"]:
+        return response
+
+    body_str = response["body"]["string"]
+    was_bytes = isinstance(body_str, bytes)
+    if was_bytes:
+        body_str = body_str.decode("utf-8", errors="replace")
+
+    if "access_token" in body_str:
+        body_str = re.sub(
+            r'"access_token"\s*:\s*"[^"]*"',
+            '"access_token": "FILTERED_TOKEN"',
+            body_str,
+        )
+        body_str = re.sub(
+            r"access_token=[^&\"'\s]+",
+            "access_token=FILTERED_TOKEN",
+            body_str,
+        )
+        response["body"]["string"] = body_str.encode("utf-8") if was_bytes else body_str
 
     return response
 
 
-def sanitize_request(request):
-    """Remove or replace sensitive data in recorded requests."""
-    # Filter out access_token from query parameters in the recorded cassette
-    if hasattr(request, "query") and request.query:
-        filtered_query = []
-        for item in request.query:
-            if item[0] != "access_token":
-                filtered_query.append(item)
-            else:
-                filtered_query.append(("access_token", "FILTERED_TOKEN"))
-        request.query = filtered_query
-    return request
-
-
 @pytest.fixture
 def zenodo_access_token():
-    """Provide Zenodo access token for tests."""
-    return os.environ.get("ACCESS_TOKEN_ZENODO_HPC_OFFICIAL", "fake-token-for-tests")
+    """Provide a placeholder Zenodo access token for tests.
+
+    Deliberately never reads a real credential from the environment. Every
+    authenticated interaction is replayed from a cassette, so a live token buys
+    nothing -- and supplying one is what previously caused it to be recorded
+    into ``TestDatabaseCreator.test_create_deposit.yaml`` and committed.
+    """
+    return "fake-token-for-tests"
 
 
 @pytest.fixture
