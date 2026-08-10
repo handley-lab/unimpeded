@@ -2,10 +2,18 @@ import datetime
 import os
 from io import BytesIO
 
-import pandas as pd
 import requests
 import yaml
 from anesthetic import read_chains, read_csv
+
+#: Base directory holding the chain grid that ``DatabaseCreator`` uploads from.
+#: Defaults to the DiRAC allocation the public grid was produced on; override
+#: with the ``UNIMPEDED_GRID_ROOT`` environment variable, or per call with the
+#: ``root`` argument of the path helpers, to upload from anywhere else.
+DEFAULT_GRID_ROOT = os.environ.get(
+    "UNIMPEDED_GRID_ROOT",
+    "/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26",
+)
 
 
 class Database:
@@ -250,7 +258,29 @@ class DatabaseCreator(Database):
         r.raise_for_status()
         return r
 
-    def get_samples(self, method, model, dataset, loc, grid="new_grid"):
+    def _grid_stem(self, method, model, dataset, grid="new_grid", root=None):
+        """
+        Build the directory holding one (method, model, dataset) run in the grid.
+
+        The layout below the base directory is identical wherever the grid is
+        stored, so only the base varies between machines.
+
+        Args:
+            method (str): The sampling method ('ns' or 'mcmc').
+            model (str): The cosmological model name.
+            dataset (str): The dataset name.
+            grid (str, optional): Which grid the chains live in. Defaults to 'new_grid'.
+            root (str, optional): Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
+
+        Returns:
+            str: The directory containing that run's files.
+        """
+        base = DEFAULT_GRID_ROOT if root is None else root
+        return f"{base}/{grid}/{method}/{model}/{dataset}"
+
+    def get_samples(
+        self, method, model, dataset, loc="hpc", grid="new_grid", root=None
+    ):
         """
         Retrieve samples from a specified location based on method, model, and dataset.
 
@@ -258,31 +288,26 @@ class DatabaseCreator(Database):
             method (str): The sampling method ('ns' for Nested Sampling and 'mcmc' for Metropolis-Hastings).
             model (str): The cosmological model name.
             dataset (str): The dataset name.
-            loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
+            loc (str, optional): Retained for backwards compatibility; the grid location is now determined by ``root``. Defaults to 'hpc'.
             grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
+            root (str, optional): Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
 
         Returns:
             DataFrame: The samples loaded via the anesthetic's read_chains function.
-        """
-        if loc == "hpc":
-            if method == "ns":
-                samples = read_chains(
-                    f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{grid}/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}"
-                )
-            elif method == "mcmc":
-                samples = read_chains(
-                    f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{grid}/{method}/{model}/{dataset}/{dataset}"
-                )
-        elif loc == "local":
-            if method == "ns":
-                samples = read_chains(
-                    f"../{grid}/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}"
-                )
-            elif method == "mcmc":
-                samples = read_chains(f"../{grid}/{method}/{model}/{dataset}/{dataset}")
-        return samples
 
-    def upload_samples(self, deposit_id, method, model, dataset, loc, grid="new_grid"):
+        Raises:
+            ValueError: If the method is not 'ns' or 'mcmc'.
+        """
+        stem = self._grid_stem(method, model, dataset, grid=grid, root=root)
+        if method == "ns":
+            return read_chains(f"{stem}/{dataset}_polychord_raw/{dataset}")
+        elif method == "mcmc":
+            return read_chains(f"{stem}/{dataset}")
+        raise ValueError(f"Invalid method: {method}. Expected 'ns' or 'mcmc'.")
+
+    def upload_samples(
+        self, deposit_id, method, model, dataset, loc="hpc", grid="new_grid", root=None
+    ):
         """
         Upload samples from a local or HPC location to a Zenodo deposit.
 
@@ -303,7 +328,7 @@ class DatabaseCreator(Database):
         bucket_url = r.json().get("links", {}).get("bucket")
         params = {"access_token": self.ACCESS_TOKEN}
 
-        samples = self.get_samples(method, model, dataset, loc, grid=grid)
+        samples = self.get_samples(method, model, dataset, loc, grid=grid, root=root)
         filename = self.get_filename(method, model, dataset, filestype="samples")
 
         samples.to_csv(filename)
@@ -323,27 +348,29 @@ class DatabaseCreator(Database):
         os.remove(f"./{filename}")
         return r
 
-    def get_yaml_path(self, method, model, dataset, loc, grid="new_grid"):
+    def get_yaml_path(
+        self, method, model, dataset, loc="hpc", grid="new_grid", root=None
+    ):
         """
-        Generate the file path for the YAML file based on location, method, model, and dataset.
+        Generate the file path for the YAML file based on method, model, and dataset.
 
         Args:
             method (str): The sampling method ('ns' for Nested Sampling and 'mcmc' for Metropolis-Hastings).
             model (str): The cosmological model name.
             dataset (str): The dataset name.
-            loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
+            loc (str, optional): Retained for backwards compatibility; the grid location is now determined by ``root``. Defaults to 'hpc'.
             grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
+            root (str, optional): Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
 
         Returns:
             str: The full path to the YAML file.
         """
-        if loc == "hpc":
-            yaml_file_path = f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{grid}/{method}/{model}/{dataset}/{dataset}.updated.yaml"
-        elif loc == "local":
-            yaml_file_path = f"/Users/ongdily/Documents/Cambridge/project2/codes/{grid}/{method}/{model}/{dataset}/{dataset}.updated.yaml"
-        return yaml_file_path
+        stem = self._grid_stem(method, model, dataset, grid=grid, root=root)
+        return f"{stem}/{dataset}.updated.yaml"
 
-    def upload_yaml(self, deposit_id, method, model, dataset, loc, grid="new_grid"):
+    def upload_yaml(
+        self, deposit_id, method, model, dataset, loc="hpc", grid="new_grid", root=None
+    ):
         """
         Upload a YAML file containing MCMC or NS chains information to a Zenodo deposit.
 
@@ -365,7 +392,9 @@ class DatabaseCreator(Database):
         params = {"access_token": self.ACCESS_TOKEN}
 
         filename = self.get_filename(method, model, dataset, filestype="info")
-        yaml_file_path = self.get_yaml_path(method, model, dataset, loc, grid=grid)
+        yaml_file_path = self.get_yaml_path(
+            method, model, dataset, loc, grid=grid, root=root
+        )
         with open(yaml_file_path, "rb") as fp:
             r = requests.put(f"{bucket_url}/{filename}", data=fp, params=params)
             r.raise_for_status()
@@ -378,28 +407,28 @@ class DatabaseCreator(Database):
 
         return r
 
-    def get_prior_info_path(self, method, model, dataset, loc, grid="new_grid"):
+    def get_prior_info_path(
+        self, method, model, dataset, loc="hpc", grid="new_grid", root=None
+    ):
         """
-        Generate the file path for the PRIOR_INFO file based on method, model, dataset and file location.
+        Generate the file path for the PRIOR_INFO file based on method, model and dataset.
 
         Args:
             method (str): The sampling method ('ns' for Nested Sampling and 'mcmc' for Metropolis-Hastings).
             model (str): The cosmological model name.
             dataset (str): The dataset name.
-            loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
+            loc (str, optional): Retained for backwards compatibility; the grid location is now determined by ``root``. Defaults to 'hpc'.
             grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
+            root (str, optional): Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
 
         Returns:
             str: The full path to the PRIOR_INFO file.
         """
-        if loc == "hpc":
-            path = f"/home/dlo26/rds/rds-dirac-dp192-63QXlf5HuFo/dlo26/{grid}/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info"
-        elif loc == "local":
-            path = f"/Users/ongdily/Documents/Cambridge/project2/codes/{grid}/{method}/{model}/{dataset}/{dataset}_polychord_raw/{dataset}.prior_info"
-        return path
+        stem = self._grid_stem(method, model, dataset, grid=grid, root=root)
+        return f"{stem}/{dataset}_polychord_raw/{dataset}.prior_info"
 
     def upload_prior_info(
-        self, deposit_id, method, model, dataset, loc, grid="new_grid"
+        self, deposit_id, method, model, dataset, loc="hpc", grid="new_grid", root=None
     ):
         """
         Upload the PRIOR_INFO file to a Zenodo deposit.
@@ -423,7 +452,7 @@ class DatabaseCreator(Database):
 
         filename = self.get_filename(method, model, dataset, filestype="prior_info")
         prior_info_file_path = self.get_prior_info_path(
-            method, model, dataset, loc, grid=grid
+            method, model, dataset, loc, grid=grid, root=root
         )
         with open(prior_info_file_path, "rb") as fp:
             r = requests.put(f"{bucket_url}/{filename}", data=fp, params=params)

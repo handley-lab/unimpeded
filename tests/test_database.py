@@ -7,7 +7,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 import yaml
 
-from unimpeded.database import Database, DatabaseCreator, DatabaseExplorer
+from unimpeded.database import (
+    DEFAULT_GRID_ROOT,
+    Database,
+    DatabaseCreator,
+    DatabaseExplorer,
+)
 
 
 class TestDatabase:
@@ -388,10 +393,22 @@ class TestGridKwarg:
         assert "/new_grid/" not in path
 
     @pytest.mark.vcr
-    def test_get_yaml_path_local_default_grid(self):
-        """loc='local' also honours the grid kwarg in its hardcoded local root."""
+    def test_get_yaml_path_honours_root(self):
+        """An explicit root replaces the default grid location."""
         creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
-        path = creator.get_yaml_path("mcmc", "wlcdm", "sn.pantheon", "local")
+        path = creator.get_yaml_path(
+            "mcmc", "wlcdm", "sn.pantheon", root="/data/chains"
+        )
+        assert path == (
+            "/data/chains/new_grid/mcmc/wlcdm/sn.pantheon/sn.pantheon.updated.yaml"
+        )
+
+    @pytest.mark.vcr
+    def test_get_yaml_path_defaults_to_grid_root(self):
+        """Without a root, paths fall back to DEFAULT_GRID_ROOT."""
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        path = creator.get_yaml_path("mcmc", "wlcdm", "sn.pantheon")
+        assert path.startswith(DEFAULT_GRID_ROOT)
         assert "/new_grid/mcmc/wlcdm/sn.pantheon/" in path
         assert path.endswith("sn.pantheon.updated.yaml")
 
@@ -415,11 +432,32 @@ class TestGridKwarg:
         assert "/new_grid/" not in path
 
     @pytest.mark.vcr
-    def test_get_prior_info_path_local(self):
-        """loc='local' on get_prior_info_path honours grid kwarg."""
+    def test_get_prior_info_path_honours_root(self):
+        """An explicit root replaces the default grid location."""
         creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
-        path = creator.get_prior_info_path("ns", "lcdm", "bao.sdss_dr16", "local")
-        assert "/new_grid/ns/" in path
+        path = creator.get_prior_info_path(
+            "ns", "lcdm", "bao.sdss_dr16", root="/data/chains"
+        )
+        assert path == (
+            "/data/chains/new_grid/ns/lcdm/bao.sdss_dr16/"
+            "bao.sdss_dr16_polychord_raw/bao.sdss_dr16.prior_info"
+        )
+
+    @pytest.mark.vcr
+    def test_get_samples_honours_root(self):
+        """get_samples reads chains from an explicit root."""
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        with patch("unimpeded.database.read_chains") as mock_read:
+            mock_read.return_value = MagicMock()
+            creator.get_samples("ns", "lcdm", "bao.sdss_dr16", root="/data/chains")
+        assert mock_read.call_args[0][0].startswith("/data/chains/new_grid/ns/lcdm/")
+
+    @pytest.mark.vcr
+    def test_get_samples_rejects_unknown_method(self):
+        """An unrecognised method raises rather than failing obscurely later."""
+        creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
+        with pytest.raises(ValueError, match="Invalid method"):
+            creator.get_samples("badmethod", "lcdm", "bao.sdss_dr16")
 
     @pytest.mark.vcr
     @patch("unimpeded.database.read_chains")
@@ -623,7 +661,7 @@ class TestUploadMethodsForwardGrid:
         captured = {}
         original = mock_creator.get_yaml_path
 
-        def patched(method, model, dataset, loc, grid="new_grid"):
+        def patched(method, model, dataset, loc="hpc", grid="new_grid", root=None):
             captured["grid"] = grid
             captured["path"] = original(method, model, dataset, loc, grid=grid)
             return str(yaml_file)
@@ -659,7 +697,7 @@ class TestUploadMethodsForwardGrid:
         captured = {}
         original = mock_creator.get_prior_info_path
 
-        def patched(method, model, dataset, loc, grid="new_grid"):
+        def patched(method, model, dataset, loc="hpc", grid="new_grid", root=None):
             captured["grid"] = grid
             captured["path"] = original(method, model, dataset, loc, grid=grid)
             return str(prior_file)
