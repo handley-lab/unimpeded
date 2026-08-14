@@ -1,11 +1,8 @@
 """Tests for the unimpeded database module."""
 
-import os
-import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
-import yaml
 
 from unimpeded.database import (
     DEFAULT_GRID_ROOT,
@@ -229,12 +226,12 @@ class TestDatabaseCreator:
         """Test DatabaseCreator initialization."""
         # Test sandbox initialization
         creator_sandbox = DatabaseCreator(sandbox=True, ACCESS_TOKEN="test-token")
-        assert creator_sandbox.sandbox == True
+        assert creator_sandbox.sandbox is True
         assert "sandbox.zenodo.org" in creator_sandbox.base_url
 
         # Test production initialization
         creator_prod = DatabaseCreator(sandbox=False, ACCESS_TOKEN="test-token")
-        assert creator_prod.sandbox == False
+        assert creator_prod.sandbox is False
         assert creator_prod.base_url == "https://zenodo.org/api/deposit/depositions"
 
     @pytest.mark.vcr
@@ -287,7 +284,6 @@ class TestDatabaseExplorer:
     def test_title_formatting(self):
         """Test consistent title formatting between Creator and Explorer."""
         creator = DatabaseCreator(sandbox=True, ACCESS_TOKEN="fake-token")
-        explorer = DatabaseExplorer(sandbox=True)
 
         # Both should use the same title format logic
         # (DatabaseExplorer searches for titles created by DatabaseCreator)
@@ -452,7 +448,7 @@ class TestGridKwarg:
     @pytest.mark.vcr
     @patch("unimpeded.database.read_chains")
     def test_get_samples_ns_hpc_forwards_grid(self, mock_read):
-        """get_samples passes a /new_grid/ path with _polychord_raw to read_chains for NS."""
+        """get_samples passes a /new_grid/ _polychord_raw path to read_chains."""
         mock_read.return_value = MagicMock()
         creator = DatabaseCreator(sandbox=False, ACCESS_TOKEN="fake-token")
         creator.get_samples("ns", "lcdm", "bao.sdss_dr16", "hpc", grid="new_grid")
@@ -519,7 +515,7 @@ class TestGetDepositIdsByTitlePagination:
 
     @patch("unimpeded.database.requests.get")
     def test_stops_on_partial_page(self, mock_get, mock_creator):
-        """A partial last page (fewer than size) ends iteration without an extra call."""
+        """A short final page ends iteration without a further request."""
         page1 = [{"id": i, "submitted": True} for i in range(1, 26)]
         page2_partial = [{"id": i, "submitted": False} for i in range(26, 36)]
         mock_get.side_effect = [

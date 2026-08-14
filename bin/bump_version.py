@@ -32,7 +32,7 @@ elif update_type == "major":
 
 new_version = version.parse(f"{major}.{minor}.{micro}")
 
-sed_string = f"s/{current_version}/{new_version}/g".replace(".", "\.")
+sed_string = f"s/{current_version}/{new_version}/g".replace(".", r"\.")
 
 for f in [vfile, README]:
     run("sed", "-i", sed_string, f)

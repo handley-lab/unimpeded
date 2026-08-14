@@ -12,7 +12,7 @@ pyproject["project"]["dependencies"]
 rel = 1
 
 
-PKGBUILD = """# Maintainer: Will Handley <wh260@cam.ac.uk> (aur.archlinux.org/account/wjhandley)
+PKGBUILD = """# Maintainer: Dily Duan Yi Ong <dlo26@cam.ac.uk>
 pkgname=python-unimpeded
 _name=${pkgname#python-}
 pkgver=%s

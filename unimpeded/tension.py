@@ -1,7 +1,14 @@
+"""Tension statistics for nested sampling chains.
+
+Wraps :func:`anesthetic.tension.tension_stats` with the correction for
+prior volume discarded during nested sampling, and adds helpers that pull
+the required chains straight from the public Zenodo grid.
+"""
+
 from functools import cache
 
 import numpy as np
-from anesthetic.samples import NestedSamples, Samples
+from anesthetic.samples import NestedSamples
 from anesthetic.tension import tension_stats as anesthetic_tension_stats
 from scipy.special import erfcinv
 from scipy.stats import chi2
@@ -131,8 +138,8 @@ def tension_stats(
 
 @cache
 def download_tension_inputs(method, model, *datasets):
-    """
-    Automates the downloading and preparation of data for tension_stats.
+    """Download and prepare the inputs that ``tension_stats`` needs.
+
     Accepts any number of datasets (2 or more).
 
     This function is cached. The download process will only run once for
@@ -173,8 +180,8 @@ def download_tension_inputs(method, model, *datasets):
 
 
 def tension_calculator(method, model, *datasets, nsamples=None, beta=None):
-    """
-    High-level calculator for tension statistics directly from dataset names.
+    """Compute tension statistics directly from dataset names.
+
     Accepts any number of datasets (2 or more).
     """
     print(f"Starting tension calculation with nsamples={nsamples}...")

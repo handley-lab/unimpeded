@@ -1,10 +1,6 @@
 """Tests for the unimpeded tension module."""
 
-from unittest.mock import MagicMock, patch
-
-import numpy as np
 import pytest
-from anesthetic.samples import NestedSamples
 
 from unimpeded.tension import download_tension_inputs, tension_calculator, tension_stats
 
@@ -257,6 +253,13 @@ class TestTensionCalculator:
 
         # Cache hits should increase
         assert cache_info_after.hits > cache_info_before.hits
+
+        # Both calls must still produce usable statistics: reusing the cached
+        # download must not stop nsamples being honoured on the second call.
+        for result, nsamples in ((result1, 50), (result2, 100)):
+            assert result is not None
+            assert all(c in result.columns for c in ("logR", "logS", "d_G", "sigma"))
+            assert len(result) == nsamples
 
 
 class TestTensionIntegration:
