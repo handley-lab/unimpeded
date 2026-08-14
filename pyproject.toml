@@ -16,6 +16,12 @@ dependencies = [
     "requests",
     "anesthetic",
     "pyyaml",
+    # Imported directly by unimpeded.tension, not merely via anesthetic:
+    # numpy for the correction factors, scipy for erfcinv and chi2. They
+    # resolve today only because anesthetic happens to require them, which
+    # would break silently if it ever stopped.
+    "numpy",
+    "scipy",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
