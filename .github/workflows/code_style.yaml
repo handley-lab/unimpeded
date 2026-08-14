@@ -46,4 +46,23 @@ jobs:
       - name: Install pydocstyle
         run: pip install pydocstyle
       - name: run pydocstyle
-        run: python -m pydocstyle --convention=numpy anesthetic
+        # This linted "anesthetic" -- a directory that does not exist in this
+        # repository -- so pydocstyle found no files and silently passed,
+        # hiding 68 violations in unimpeded/ for as long as the job has run.
+        run: python -m pydocstyle --convention=numpy unimpeded
+
+  flake8:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install flake8
+        run: pip install flake8
+      # README.rst and installation.rst both tell contributors to run this,
+      # and it is declared in the test extra, but no workflow ever ran it.
+      # Settings live in .flake8 so the documented command works unmodified.
+      - name: run flake8
+        run: python -m flake8 unimpeded tests bin

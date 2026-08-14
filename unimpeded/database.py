@@ -1,3 +1,10 @@
+"""Create, publish and retrieve unimpeded chain deposits on Zenodo.
+
+Provides :class:`Database` with the naming scheme shared by both halves,
+:class:`DatabaseCreator` for archiving a grid to Zenodo, and
+:class:`DatabaseExplorer` for downloading it back without credentials.
+"""
+
 import datetime
 import os
 from io import BytesIO
@@ -17,16 +24,18 @@ DEFAULT_GRID_ROOT = os.environ.get(
 
 
 class Database:
-    """
-    Base class providing utility methods for generating file names for different file types. This class in inherited by class DatabaseCreator and DatabaseExplorer.
+    """Shared filename conventions for the Zenodo deposit classes.
+
+    This class in inherited by class DatabaseCreator and DatabaseExplorer.
     """
 
     def __init__(self, sandbox=False):
-        """
-        Initialise the Database instance and fetch available models and datasets from Zenodo.
+        """Initialise the instance and fetch what is available from Zenodo.
 
-        Args:
-            sandbox (bool, optional): Whether to use the Zenodo sandbox environment. Defaults to False.
+        Parameters
+        ----------
+        sandbox : bool, optional
+            Whether to use the Zenodo sandbox environment. Defaults to False.
         """
         self.sandbox = sandbox
         if sandbox:
@@ -50,42 +59,57 @@ class Database:
     def datasets_for(self, model):
         """Return a sorted list of datasets available for a given model.
 
-        Args:
-            model (str): The cosmological model name (e.g. 'lcdm').
+        Parameters
+        ----------
+        model : str
+            The cosmological model name (e.g. 'lcdm').
 
-        Returns:
-            list: A sorted list of dataset names available for the model.
+        Returns
+        -------
+        list
+            A sorted list of dataset names available for the model.
         """
         return sorted({dataset for m, dataset in self.combinations if m == model})
 
     def models_for(self, dataset):
         """Return a sorted list of models available for a given dataset.
 
-        Args:
-            dataset (str): The dataset identifier (e.g. 'planck_2018_plik').
+        Parameters
+        ----------
+        dataset : str
+            The dataset identifier (e.g. 'planck_2018_plik').
 
-        Returns:
-            list: A sorted list of model names available for the dataset.
+        Returns
+        -------
+        list
+            A sorted list of model names available for the dataset.
         """
         return sorted({model for model, d in self.combinations if d == dataset})
 
     def is_available(self, model, dataset):
         """Check whether a specific model-dataset combination exists on Zenodo.
 
-        Args:
-            model (str): The cosmological model name.
-            dataset (str): The dataset identifier.
+        Parameters
+        ----------
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset identifier.
 
-        Returns:
-            bool: True if the combination exists, False otherwise.
+        Returns
+        -------
+        bool
+            True if the combination exists, False otherwise.
         """
         return (model, dataset) in self.combinations
 
     def _fetch_combinations(self):
-        """Search all unimpeded deposits on Zenodo and extract model-dataset combinations.
+        """Extract every (model, dataset) pair from the Zenodo deposits.
 
-        Returns:
-            set: A set of (model, dataset) tuples representing available combinations.
+        Returns
+        -------
+        set
+            A set of (model, dataset) tuples representing available combinations.
         """
         combinations = set()
         page = 1
@@ -129,20 +153,29 @@ class Database:
         return combinations
 
     def get_filename(self, method, model, dataset, filestype):
-        """
-        Generate a filename based on the provided method, model, dataset, and file type.
+        """Generate a filename from the method, model, dataset and file type.
 
-        Args:
-            method (str): The method used by the HPC to obtain the chains ('ns' for Nested Sampling or 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name (e.g. 'klcdm').
-            dataset (str): The dataset identifier (e.g. 'bao.sdss_dr16+des_y1.joint).
-            filestype (str): The type of file. Must be one of 'samples', 'info', or 'prior_info'.
+        Parameters
+        ----------
+        method : str
+            The method used by the HPC to obtain the chains ('ns' for Nested Sampling or
+            'mcmc' for Metropolis-Hastings).
+        model : str
+            The cosmological model name (e.g. 'klcdm').
+        dataset : str
+            The dataset identifier (e.g. 'bao.sdss_dr16+des_y1.joint).
+        filestype : str
+            The type of file. Must be one of 'samples', 'info', or 'prior_info'.
 
-        Returns:
-            str: The generated filename.
+        Returns
+        -------
+        str
+            The generated filename.
 
-        Raises:
-            ValueError: If the filestype is not one of the expected types.
+        Raises
+        ------
+        ValueError
+            If the filestype is not one of the expected types.
         """
         if filestype == "samples":
             filename = f"{method}_{model}_{dataset}.csv"
@@ -152,41 +185,49 @@ class Database:
             filename = f"{method}_{model}_{dataset}.prior_info"
         else:
             raise ValueError(
-                f"Invalid file type: {filestype}. Expected 'samples', 'info' or 'prior_info'."
+                f"Invalid file type: {filestype}. "
+                "Expected 'samples', 'info' or 'prior_info'."
             )
         return filename
 
 
 class DatabaseCreator(Database):
-    """
-    A class for creating and managing deposits on Zenodo. Inherits from Database to utilise filename generation. ACCESS_TOEKN is required for authentication and is intended to be used only by the authors of unimpeded.
+    """A class for creating and managing deposits on Zenodo.
+
+    Inherits from Database to utilise filename generation. ACCESS_TOEKN is required for
+    authentication and is intended to be used only by the authors of unimpeded.
     """
 
     def __init__(
         self, sandbox=True, ACCESS_TOKEN=None, base_url=None, records_url=None
     ):
-        """
-        Initialise the DatabaseCreator instance.
+        """Initialise the DatabaseCreator instance.
 
-        Args:
-            sandbox (bool, optional): Whether to use the Zenodo sandbox environment. Defaults to True.
-            ACCESS_TOKEN (str, optional): The access token for authentication.
-            base_url (str, optional): The base URL for deposit endpoints.
-            records_url (str, optional): The URL for records endpoints.
+        Parameters
+        ----------
+        sandbox : bool, optional
+            Whether to use the Zenodo sandbox environment. Defaults to True.
+        ACCESS_TOKEN : str, optional
+            The access token for authentication.
+        base_url : str, optional
+            The base URL for deposit endpoints.
+        records_url : str, optional
+            The URL for records endpoints.
         """
         self.ACCESS_TOKEN = ACCESS_TOKEN
-        if sandbox == True:
+        if sandbox:
             self.base_url = "https://sandbox.zenodo.org/api/deposit/depositions"
-        elif sandbox == False:
+        else:
             self.base_url = "https://zenodo.org/api/deposit/depositions"
         super().__init__(sandbox)
 
     def create_deposit(self):
-        """
-        Create a new empty deposit on Zenodo.
+        """Create a new empty deposit on Zenodo.
 
-        Returns:
-            int: The deposit_id of the new deposit on Zenodo.
+        Returns
+        -------
+        int
+            The deposit_id of the new deposit on Zenodo.
         """
         r = requests.post(
             self.base_url, params={"access_token": self.ACCESS_TOKEN}, json={}
@@ -196,29 +237,37 @@ class DatabaseCreator(Database):
         return deposit_id
 
     def create_description(self, model, dataset):
-        """
-        Create a description string for the deposit based on model and dataset.
+        """Create a description string for the deposit based on model and dataset.
 
-        Args:
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
+        Parameters
+        ----------
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
 
-        Returns:
-            str: The description string.
+        Returns
+        -------
+        str
+            The description string.
         """
         description = f"cosmological model:{model}, dataset:{dataset}"
         return description
 
     def create_metadata(self, model, dataset):
-        """
-        Create metadata for a deposit on Zenodo.
+        """Create metadata for a deposit on Zenodo.
 
-        Args:
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
+        Parameters
+        ----------
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
 
-        Returns:
-            dict: The metadata dictionary for the deposit.
+        Returns
+        -------
+        dict
+            The metadata dictionary for the deposit.
         """
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         metadata = {
@@ -232,7 +281,8 @@ class DatabaseCreator(Database):
                 "dates": [
                     {
                         "start": today,  # Custom date in YYYY-MM-DD format
-                        "type": "Created",  # Type of date (e.g., Collected, Valid, etc.)
+                        # Date type, e.g. Collected, Valid, etc.
+                        "type": "Created",
                     }
                 ],
             }
@@ -240,15 +290,19 @@ class DatabaseCreator(Database):
         return metadata
 
     def update_metadata(self, deposit_id, metadata):
-        """
-        Update the metadata of an existing zenodo deposit.
+        """Update the metadata of an existing zenodo deposit.
 
-        Args:
-            deposit_id (int): The deposit ID of the deposit to be updated.
-            metadata (dict): The metadata to be updated.
+        Parameters
+        ----------
+        deposit_id : int
+            The deposit ID of the deposit to be updated.
+        metadata : dict
+            The metadata to be updated.
 
-        Returns:
-            Response: The requests response object.
+        Returns
+        -------
+        Response
+            The requests response object.
         """
         r = requests.put(
             f"{self.base_url}/{deposit_id}",
@@ -259,21 +313,28 @@ class DatabaseCreator(Database):
         return r
 
     def _grid_stem(self, method, model, dataset, grid="new_grid", root=None):
-        """
-        Build the directory holding one (method, model, dataset) run in the grid.
+        """Build the directory holding one (method, model, dataset) run in the grid.
 
-        The layout below the base directory is identical wherever the grid is
-        stored, so only the base varies between machines.
+        The layout below the base directory is identical wherever the grid is stored, so
+        only the base varies between machines.
 
-        Args:
-            method (str): The sampling method ('ns' or 'mcmc').
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
-            grid (str, optional): Which grid the chains live in. Defaults to 'new_grid'.
-            root (str, optional): Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
+        Parameters
+        ----------
+        method : str
+            The sampling method ('ns' or 'mcmc').
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
+        grid : str, optional
+            Which grid the chains live in. Defaults to 'new_grid'.
+        root : str, optional
+            Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
 
-        Returns:
-            str: The directory containing that run's files.
+        Returns
+        -------
+        str
+            The directory containing that run's files.
         """
         base = DEFAULT_GRID_ROOT if root is None else root
         return f"{base}/{grid}/{method}/{model}/{dataset}"
@@ -281,22 +342,35 @@ class DatabaseCreator(Database):
     def get_samples(
         self, method, model, dataset, loc="hpc", grid="new_grid", root=None
     ):
-        """
-        Retrieve samples from a specified location based on method, model, and dataset.
+        """Retrieve samples for one method, model and dataset from the grid.
 
-        Args:
-            method (str): The sampling method ('ns' for Nested Sampling and 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
-            loc (str, optional): Retained for backwards compatibility; the grid location is now determined by ``root``. Defaults to 'hpc'.
-            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
-            root (str, optional): Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
+        Parameters
+        ----------
+        method : str
+            The sampling method ('ns' for Nested Sampling and 'mcmc' for Metropolis-
+            Hastings).
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
+        loc : str, optional
+            Retained for backwards compatibility; the grid location is now determined by
+            ``root``. Defaults to 'hpc'.
+        grid : str, optional
+            Which grid the chains live in. 'grid' for datasets in paper 2511.04661;
+            'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
+        root : str, optional
+            Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
 
-        Returns:
-            DataFrame: The samples loaded via the anesthetic's read_chains function.
+        Returns
+        -------
+        DataFrame
+            The samples loaded via the anesthetic's read_chains function.
 
-        Raises:
-            ValueError: If the method is not 'ns' or 'mcmc'.
+        Raises
+        ------
+        ValueError
+            If the method is not 'ns' or 'mcmc'.
         """
         stem = self._grid_stem(method, model, dataset, grid=grid, root=root)
         if method == "ns":
@@ -308,19 +382,30 @@ class DatabaseCreator(Database):
     def upload_samples(
         self, deposit_id, method, model, dataset, loc="hpc", grid="new_grid", root=None
     ):
-        """
-        Upload samples from a local or HPC location to a Zenodo deposit.
+        """Upload samples from a local or HPC location to a Zenodo deposit.
 
-        Args:
-            deposit_id (int): The deposit ID of the deposit.
-            method (str): The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
-            loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
-            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
+        Parameters
+        ----------
+        deposit_id : int
+            The deposit ID of the deposit.
+        method : str
+            The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-
+            Hastings).
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
+        loc : str
+            The location of the samples ('hpc' for the HPC or 'local' for the local
+            computer).
+        grid : str, optional
+            Which grid the chains live in. 'grid' for datasets in paper 2511.04661;
+            'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
 
-        Returns:
-            Response: The requests response object after uploading.
+        Returns
+        -------
+        Response
+            The requests response object after uploading.
         """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
@@ -351,19 +436,30 @@ class DatabaseCreator(Database):
     def get_yaml_path(
         self, method, model, dataset, loc="hpc", grid="new_grid", root=None
     ):
-        """
-        Generate the file path for the YAML file based on method, model, and dataset.
+        """Generate the file path for the YAML file based on method, model, and dataset.
 
-        Args:
-            method (str): The sampling method ('ns' for Nested Sampling and 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
-            loc (str, optional): Retained for backwards compatibility; the grid location is now determined by ``root``. Defaults to 'hpc'.
-            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
-            root (str, optional): Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
+        Parameters
+        ----------
+        method : str
+            The sampling method ('ns' for Nested Sampling and 'mcmc' for Metropolis-
+            Hastings).
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
+        loc : str, optional
+            Retained for backwards compatibility; the grid location is now determined by
+            ``root``. Defaults to 'hpc'.
+        grid : str, optional
+            Which grid the chains live in. 'grid' for datasets in paper 2511.04661;
+            'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
+        root : str, optional
+            Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
 
-        Returns:
-            str: The full path to the YAML file.
+        Returns
+        -------
+        str
+            The full path to the YAML file.
         """
         stem = self._grid_stem(method, model, dataset, grid=grid, root=root)
         return f"{stem}/{dataset}.updated.yaml"
@@ -371,19 +467,30 @@ class DatabaseCreator(Database):
     def upload_yaml(
         self, deposit_id, method, model, dataset, loc="hpc", grid="new_grid", root=None
     ):
-        """
-        Upload a YAML file containing MCMC or NS chains information to a Zenodo deposit.
+        """Upload the YAML run-settings file to a Zenodo deposit.
 
-        Args:
-            deposit_id (int): The deposit ID of the deposit.
-            method (str): The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
-            loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
-            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
+        Parameters
+        ----------
+        deposit_id : int
+            The deposit ID of the deposit.
+        method : str
+            The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-
+            Hastings).
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
+        loc : str
+            The location of the samples ('hpc' for the HPC or 'local' for the local
+            computer).
+        grid : str, optional
+            Which grid the chains live in. 'grid' for datasets in paper 2511.04661;
+            'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
 
-        Returns:
-            Response: The requests response object after uploading.
+        Returns
+        -------
+        Response
+            The requests response object after uploading.
         """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
@@ -410,19 +517,30 @@ class DatabaseCreator(Database):
     def get_prior_info_path(
         self, method, model, dataset, loc="hpc", grid="new_grid", root=None
     ):
-        """
-        Generate the file path for the PRIOR_INFO file based on method, model and dataset.
+        """Generate the PRIOR_INFO path for a method, model and dataset.
 
-        Args:
-            method (str): The sampling method ('ns' for Nested Sampling and 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
-            loc (str, optional): Retained for backwards compatibility; the grid location is now determined by ``root``. Defaults to 'hpc'.
-            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
-            root (str, optional): Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
+        Parameters
+        ----------
+        method : str
+            The sampling method ('ns' for Nested Sampling and 'mcmc' for Metropolis-
+            Hastings).
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
+        loc : str, optional
+            Retained for backwards compatibility; the grid location is now determined by
+            ``root``. Defaults to 'hpc'.
+        grid : str, optional
+            Which grid the chains live in. 'grid' for datasets in paper 2511.04661;
+            'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
+        root : str, optional
+            Base directory containing the grid. Defaults to :data:`DEFAULT_GRID_ROOT`.
 
-        Returns:
-            str: The full path to the PRIOR_INFO file.
+        Returns
+        -------
+        str
+            The full path to the PRIOR_INFO file.
         """
         stem = self._grid_stem(method, model, dataset, grid=grid, root=root)
         return f"{stem}/{dataset}_polychord_raw/{dataset}.prior_info"
@@ -430,19 +548,30 @@ class DatabaseCreator(Database):
     def upload_prior_info(
         self, deposit_id, method, model, dataset, loc="hpc", grid="new_grid", root=None
     ):
-        """
-        Upload the PRIOR_INFO file to a Zenodo deposit.
+        """Upload the PRIOR_INFO file to a Zenodo deposit.
 
-        Args:
-            deposit_id (int): The deposit ID of the deposit.
-            method (str): The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
-            loc (str): The location of the samples ('hpc' for the HPC or 'local' for the local computer).
-            grid (str, optional): Which grid the chains live in. 'grid' for datasets in paper 2511.04661; 'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
+        Parameters
+        ----------
+        deposit_id : int
+            The deposit ID of the deposit.
+        method : str
+            The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-
+            Hastings).
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
+        loc : str
+            The location of the samples ('hpc' for the HPC or 'local' for the local
+            computer).
+        grid : str, optional
+            Which grid the chains live in. 'grid' for datasets in paper 2511.04661;
+            'new_grid' for datasets in paper 2603.05472. Defaults to 'new_grid'.
 
-        Returns:
-            Response: The requests response object after uploading.
+        Returns
+        -------
+        Response
+            The requests response object after uploading.
         """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         r = requests.get(deposit_url)
@@ -467,15 +596,25 @@ class DatabaseCreator(Database):
         return r
 
     def get_deposit_ids_by_title(self, title, size=25):
-        """
-        Search and retrieve deposit IDs that match a given title from Zenodo. Can search for both published and unpublished deposits.
+        """Search and retrieve deposit IDs that match a given title from Zenodo.
 
-        Args:
-            title (str): The deposit title to search for.
-            size (int, optional): Page size for the Zenodo deposit listing endpoint. Pagination is followed automatically via the response's `next` link, so the total number of results is not limited by this value. Zenodo's deposit API rejects size > 25 with a 400 validation error, so the default is 25.
+        Can search for both published and unpublished deposits.
 
-        Returns:
-            dict: A dictionary with two keys 'published' and 'unpublished' containing lists of published and unpublished deposit IDs respectively.
+        Parameters
+        ----------
+        title : str
+            The deposit title to search for.
+        size : int, optional
+            Page size for the Zenodo deposit listing endpoint. Pagination is followed
+            automatically via the response's `next` link, so the total number of results
+            is not limited by this value. Zenodo's deposit API rejects size > 25 with a
+            400 validation error, so the default is 25.
+
+        Returns
+        -------
+        dict
+            A dictionary with two keys 'published' and 'unpublished' containing lists of
+            published and unpublished deposit IDs respectively.
         """
         deposit_ids = {"published": [], "unpublished": []}
         page = 1
@@ -531,14 +670,18 @@ class DatabaseCreator(Database):
         return deposit_ids
 
     def delete_unpublished_deposit_by_id(self, deposit_ids):
-        """
-        Delete one or more unpublished deposits by their deposit ID(s) after checking for their existence.
+        """Delete unpublished deposits by ID, after checking each one exists.
 
-        Args:
-            deposit_ids (int or list): A single deposit ID (int) or a list of deposit IDs to delete.
+        Parameters
+        ----------
+        deposit_ids : int or list
+            A single deposit ID (int) or a list of deposit IDs to delete.
 
-        Returns:
-            list: A list of dictionaries, each containing the deposit ID and the status of the operation.
+        Returns
+        -------
+        list
+            A list of dictionaries, each containing the deposit ID and the status of the
+            operation.
         """
         if isinstance(deposit_ids, int):
             deposit_ids = [deposit_ids]
@@ -593,14 +736,16 @@ class DatabaseCreator(Database):
         return results
 
     def get_metadata(self, deposit_id):
-        """
-        Retrieve metadata for an existing deposit, given the deposit ID.
+        """Retrieve metadata for an existing deposit, given the deposit ID.
 
-        Args:
-            deposit_id (int): The deposit ID of the deposit.
+        Parameters
+        ----------
+        deposit_id : int
+            The deposit ID of the deposit.
 
-        Returns:
-            dict or None: The metadata dictionary if successful, otherwise None.
+        Returns
+        -------
+        dict or None: The metadata dictionary if successful, otherwise None.
         """
         metadata_url = f"{self.base_url}/{deposit_id}"
         try:
@@ -612,20 +757,25 @@ class DatabaseCreator(Database):
             return deposit_data.get("metadata", {})
         except requests.exceptions.HTTPError as http_err:
             print(
-                f"Failed to fetch metadata for deposit ID {deposit_id}. Error: {http_err}"
+                f"Failed to fetch metadata for deposit ID {deposit_id}. "
+                f"Error: {http_err}"
             )
             return None
 
     def publish(self, deposit_id, metadata):
-        """
-        Publish a deposit on Zenodo with the provided metadata.
+        """Publish a deposit on Zenodo with the provided metadata.
 
-        Args:
-            deposit_id (int): The deposit ID of the deposit.
-            metadata (dict): The metadata for the deposit.
+        Parameters
+        ----------
+        deposit_id : int
+            The deposit ID of the deposit.
+        metadata : dict
+            The metadata for the deposit.
 
-        Returns:
-            bool: True if the deposit was published successfully, False otherwise.
+        Returns
+        -------
+        bool
+            True if the deposit was published successfully, False otherwise.
         """
         publish_url = f"{self.base_url}/{deposit_id}/actions/publish"
 
@@ -640,7 +790,8 @@ class DatabaseCreator(Database):
             concept_doi = result.get("conceptdoi", "N/A")
 
             print(
-                f"{title} (Deposit ID: {deposit_id}) is published successfully. Concept DOI: {concept_doi}"
+                f"{title} (Deposit ID: {deposit_id}) is published "
+                f"successfully. Concept DOI: {concept_doi}"
             )
             return True
 
@@ -648,7 +799,8 @@ class DatabaseCreator(Database):
             error_code = response.status_code if "response" in locals() else "N/A"
             title = metadata.get("title", "Unknown Title")
             print(
-                f"{title} (Deposit ID: {deposit_id}) publishing failed. Error code: {error_code}"
+                f"{title} (Deposit ID: {deposit_id}) publishing failed. "
+                f"Error code: {error_code}"
             )
             print(f"Error details: {http_err}")
             return False
@@ -657,14 +809,19 @@ class DatabaseCreator(Database):
             return False
 
     def newversion(self, deposit_id):
-        """
-        Create a new version of an already published Zenodo deposit, to allow editing and updating. Each new version is assigned a new deposit ID.
+        """Create a new version of a published deposit so it can be edited.
 
-        Args:
-            deposit_id (int): The deposit ID of the published deposit.
+        Each new version is assigned a new deposit ID.
 
-        Returns:
-            int or None: The new deposit ID of the new version if successful; otherwise, None.
+        Parameters
+        ----------
+        deposit_id : int
+            The deposit ID of the published deposit.
+
+        Returns
+        -------
+        int or None: The new deposit ID of the new version if successful; otherwise,
+        None.
         """
         try:
             # Retrieve deposit information
@@ -699,14 +856,19 @@ class DatabaseCreator(Database):
             return None
 
     def get_concept_doi(self, deposit_id):
-        """
-        Retrieve the concept DOI for a published deposit. Concept DOI is only available for previously published deposits, and it remains unchanged regardless of different versions, which have different deposit IDs.
+        """Retrieve the concept DOI for a published deposit.
 
-        Args:
-            deposit_id (int): The deposit ID of the deposit.
+        Concept DOI is only available for previously published deposits, and it remains
+        unchanged regardless of different versions, which have different deposit IDs.
 
-        Returns:
-            str or None: The concept DOI if available; otherwise, None.
+        Parameters
+        ----------
+        deposit_id : int
+            The deposit ID of the deposit.
+
+        Returns
+        -------
+        str or None: The concept DOI if available; otherwise, None.
         """
         deposit_url = f"{self.base_url}/{deposit_id}?access_token={self.ACCESS_TOKEN}"
         response = requests.get(deposit_url)
@@ -724,36 +886,43 @@ class DatabaseCreator(Database):
 
 
 class DatabaseExplorer(Database):
-    """
-    A class for exploring and downloading deposits from Zenodo. Inherits from Database to utilise filename generation.
+    """A class for exploring and downloading deposits from Zenodo.
+
+    Inherits from Database to utilise filename generation.
     """
 
     def __init__(self, sandbox=False, base_url=None, records_url=None):
-        """
-        Initialise the DatabaseExplorer instance.
+        """Initialise the DatabaseExplorer instance.
 
-        Args:
-            sandbox (bool, optional): Whether to use the Zenodo sandbox environment. Defaults to False.
-            base_url (str, optional): The base URL for deposit endpoints.
-            records_url (str, optional): The URL for records endpoints.
+        Parameters
+        ----------
+        sandbox : bool, optional
+            Whether to use the Zenodo sandbox environment. Defaults to False.
+        base_url : str, optional
+            The base URL for deposit endpoints.
+        records_url : str, optional
+            The URL for records endpoints.
         """
-        if sandbox == True:
+        if sandbox:
             self.base_url = "https://sandbox.zenodo.org/api/deposit/depositions"
-        elif sandbox == False:
+        else:
             self.base_url = "https://zenodo.org/api/deposit/depositions"
         super().__init__(sandbox)
 
     def download(self, deposit_id, filename):
-        """
-        Download a specific file from a deposit, given the deposit ID and filename.
+        """Download a specific file from a deposit, given the deposit ID and filename.
 
-        Args:
-            deposit_id (int): The deposit ID of the deposit.
-            filename (str): The name of the file to download.
+        Parameters
+        ----------
+        deposit_id : int
+            The deposit ID of the deposit.
+        filename : str
+            The name of the file to download.
 
-        Returns:
-            DataFrame, dict, or None: The downloaded data depending on the file type;
-                                      a DataFrame for NS and MCMC chains, a dict for info and prior_info.
+        Returns
+        -------
+        DataFrame, dict, or None: The downloaded data depending on the file type; a
+        DataFrame for NS and MCMC chains, a dict for info and prior_info.
         """
         deposit_url = f"{self.records_url}/{deposit_id}"
         r = requests.get(deposit_url)
@@ -804,63 +973,80 @@ class DatabaseExplorer(Database):
             print("Error retrieving deposit metadata:", r.status_code, r.json())
 
     def download_samples(self, method, model, dataset):
-        """
-        Download samples for a given method, model, and dataset.
+        """Download samples for a given method, model, and dataset.
 
-        Args:
-            method (str): The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
+        Parameters
+        ----------
+        method : str
+            The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-
+            Hastings).
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
 
-        Returns:
-            DataFrame or None: The downloaded sample data.
+        Returns
+        -------
+        DataFrame or None: The downloaded sample data.
         """
         filename = self.get_filename(method, model, dataset, "samples")
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
     def download_info(self, method, model, dataset):
-        """
-        Download the YAML info file for a given method, model, and dataset.
+        """Download the YAML info file for a given method, model, and dataset.
 
-        Args:
-            method (str): The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-Hastings).
-            model (str): The cosmological model name.
-            dataset (str): The dataset name..
+        Parameters
+        ----------
+        method : str
+            The sampling method ('ns' for Nested Sampling or 'mcmc' for Metropolis-
+            Hastings).
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name..
 
-        Returns:
-            dict or None: The contents of the info file.
+        Returns
+        -------
+        dict or None: The contents of the info file.
         """
         filename = self.get_filename(method, model, dataset, "info")
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
     def download_prior_info(self, model, dataset, method="ns"):
-        """
-        Download the PRIOR_INFO file for a given method, model, and dataset.
+        """Download the PRIOR_INFO file for a given method, model, and dataset.
 
-        Args:
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
-            method (str): 'ns' for Nested Sampling by default.
+        Parameters
+        ----------
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
+        method : str
+            'ns' for Nested Sampling by default.
 
-        Returns:
-            dict or None: A dictionary containing the value of 'nprior' and 'ndiscarded'.
+        Returns
+        -------
+        dict or None: A dictionary containing the value of 'nprior' and 'ndiscarded'.
         """
         filename = self.get_filename(method, model, dataset, "prior_info")
         deposit_id = self.get_deposit_id_by_title_users(model, dataset)
         return self.download(deposit_id, filename)
 
     def get_deposit_id_by_title_users(self, model, dataset):
-        """
-        Search for a single deposit by title without requiring an access token.
+        """Search for a single deposit by title without requiring an access token.
 
-        Args:
-            model (str): The cosmological model name.
-            dataset (str): The dataset name.
+        Parameters
+        ----------
+        model : str
+            The cosmological model name.
+        dataset : str
+            The dataset name.
 
-        Returns:
-            str or None: The deposit ID of the matching result, or None if not found.
+        Returns
+        -------
+        str or None: The deposit ID of the matching result, or None if not found.
         """
         params = {
             "q": f'title:"unimpeded: {model} {dataset}"',

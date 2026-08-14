@@ -6,7 +6,15 @@ repos:
         entry: python -m pydocstyle --convention=numpy
         language: system
         types: [python]
-        files: "lsbi/"
+        # Was "lsbi/", a path from a different repository, so this hook matched
+        # no files here and never ran.
+        files: "^unimpeded/"
+      - id: flake8
+        name: flake8
+        entry: python -m flake8
+        language: system
+        types: [python]
+        files: "^(unimpeded|tests|bin)/"
       - id: black
         name: black
         args: [ "--check"  ]

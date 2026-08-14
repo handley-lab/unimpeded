@@ -1,0 +1,20 @@
+[flake8]
+# Match black's line length rather than PEP 8's 79, so the formatter and the
+# linter cannot disagree about the same line.
+max-line-length = 88
+
+# E203 (whitespace before ':') and W503 (line break before binary operator)
+# are both emitted by flake8 for code black has deliberately formatted that
+# way; the two projects document this pair as the required exclusions.
+extend-ignore = E203, W503
+
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    .eggs,
+    *.egg-info,
+    docs/build,
+    test_venv,
+    venv
