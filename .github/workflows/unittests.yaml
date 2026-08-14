@@ -12,22 +12,36 @@ on:
 jobs:
   pip:
     runs-on: ubuntu-latest
+    strategy:
+      # Report every failing version, not just the first.
+      fail-fast: false
+      matrix:
+        # Every version the package claims to support in pyproject.toml.
+        # Testing a single version is how requires-python drifted out of step
+        # with the code: functools.cache needs 3.9+, but ">=3.8" was declared
+        # and no job ever exercised 3.8 to catch it.
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    name: pip (${{ matrix.python-version }})
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: ${{ matrix.python-version }}
           cache: 'pip'
       - name: Install dependencies
         run: |
           pip install -e ".[test]"
 
+      # No credentials are set here deliberately. Nothing in the package or the
+      # test suite reads a token from the environment: every authenticated
+      # interaction is replayed from a cassette. Injecting one only creates a
+      # way for it to be captured into a recording.
       - name: Test with pytest
         run: pytest --cov=unimpeded tests
-        env:
-          ACCESS_TOKEN: ${{ secrets.RENEW_GITHUB_ACCESS_TOKEN }}
 
       - name: Upload coverage to Codecov
+        # One upload is enough; the suite is version-independent.
+        if: matrix.python-version == '3.10'
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

@@ -4,7 +4,7 @@ unimpeded: Universal model comparison & parameter estimation distributed over ev
 :unimpeded: Universal model comparison & parameter estimation distributed over every dataset 
 
 :Author: Dily Ong & Will Handley
-:Version: 1.2.4
+:Version: 1.2.5
 :Homepage: https://github.com/handley-lab/unimpeded
 :Documentation: http://unimpeded.readthedocs.io/
 
@@ -71,7 +71,7 @@ Dependencies
 
 Basic requirements:
 
-- Python 3.6+
+- Python 3.10+
 - `anesthetic <https://pypi.org/project/anesthetic/>`__
 
 Documentation:
