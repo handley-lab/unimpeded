@@ -33,7 +33,7 @@ Conda
 .. code:: bash
 
     # Create a conda environment
-    conda create -n unimpeded_env python=3.9
+    conda create -n unimpeded_env python=3.10
 
     # Activate the environment
     conda activate unimpeded_env
@@ -126,7 +126,7 @@ Dependencies
 
 Basic requirements:
 
-- Python 3.8+
+- Python 3.10+
 - `anesthetic <https://pypi.org/project/anesthetic/>`__
 - `requests <https://pypi.org/project/requests/>`__
 
