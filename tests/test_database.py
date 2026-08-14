@@ -311,16 +311,6 @@ class TestDatabaseIntegration:
     """Integration tests for complete workflows."""
 
     @pytest.mark.vcr
-    @pytest.mark.slow
-    def test_complete_upload_download_workflow(
-        self, zenodo_access_token, temp_data_files
-    ):
-        """Test complete workflow: create -> upload -> publish -> download."""
-        # This test would require a published deposit to download from
-        # Skip for now as it requires coordination between upload and download
-        pytest.skip("Integration test requires published deposits")
-
-    @pytest.mark.vcr
     def test_filename_consistency(self):
         """Test that Creator and Explorer use consistent filenames."""
         creator = DatabaseCreator(sandbox=True)
