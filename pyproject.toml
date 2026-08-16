@@ -14,7 +14,10 @@ license = {file = "LICENSE"}
 requires-python = ">=3.10"
 dependencies = [
     "requests",
-    "anesthetic",
+    # unimpeded.tension imports anesthetic.tension.tension_stats, and that
+    # module did not exist before anesthetic 2.11.0: on 2.10.0 and earlier the
+    # import fails with ModuleNotFoundError.
+    "anesthetic>=2.11.0",
     "pyyaml",
     # Imported directly by unimpeded.tension, not merely via anesthetic:
     # numpy for the correction factors, scipy for erfcinv and chi2. They
