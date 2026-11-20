@@ -121,6 +121,9 @@ nitpick_ignore = [
 # since its cells download chains from Zenodo.
 nb_execution_mode = "off"
 
+# Render the notebook's $...$ / $$...$$ maths as LaTeX rather than raw text.
+myst_enable_extensions = ["dollarmath", "amsmath"]
+
 # -- Options for autosectionlabel------------------------------------------
 autosectionlabel_prefix_document = True
 
