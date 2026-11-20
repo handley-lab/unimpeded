@@ -5,6 +5,7 @@
    :caption: Contents
 
    installation
+   tutorial
    unimpeded <modules>
 
 .. include:: ../../README.rst
