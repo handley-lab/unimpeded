@@ -77,7 +77,8 @@ For an editable installation (useful for development):
 Jupyter Notebook Tutorial
 -------------------------
 
-A tutorial notebook is available to help you get started. After installing ``unimpeded``, download the notebook:
+A tutorial notebook is available to help you get started. You can read it online on the
+:doc:`tutorial` page, or, after installing ``unimpeded``, download the notebook:
 
 .. code:: bash
 

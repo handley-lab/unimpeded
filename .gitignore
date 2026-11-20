@@ -10,3 +10,4 @@ build
 .coverage
 venv
 .DS_Store
+docs/source/tutorial.ipynb

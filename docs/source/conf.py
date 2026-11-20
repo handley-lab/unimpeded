@@ -9,9 +9,20 @@
 # -- Path setup --------------------------------------------------------------
 
 import os
+import shutil
 import sys
 
 sys.path.append(os.path.abspath("../../"))
+
+# The tutorial notebook lives at the repository root, where the
+# ``download-unimpeded-tutorial`` CLI fetches it from. Sphinx can only read
+# sources inside this directory, so copy it in at build time rather than
+# keeping a second tracked copy that could drift out of sync.
+_here = os.path.dirname(os.path.abspath(__file__))
+shutil.copyfile(
+    os.path.join(_here, "..", "..", "unimpeded_tutorial.ipynb"),
+    os.path.join(_here, "tutorial.ipynb"),
+)
 
 
 def get_version(short=False):
@@ -62,6 +73,7 @@ extensions = [
     "sphinx.ext.imgconverter",
     "matplotlib.sphinxext.plot_directive",
     "numpydoc",
+    "myst_nb",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -103,6 +115,11 @@ autosummary_generate = True
 nitpick_ignore = [
     ("py:obj", "pandas.core.groupby.SeriesGroupBy.sample")
 ]  # not currently included in pandas 1.5, but will in future
+
+# -- Options for myst-nb ---------------------------------------------------
+# Render the tutorial notebook as stored; never run it during the docs build,
+# since its cells download chains from Zenodo.
+nb_execution_mode = "off"
 
 # -- Options for autosectionlabel------------------------------------------
 autosectionlabel_prefix_document = True
